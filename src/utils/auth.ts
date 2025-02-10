@@ -25,7 +25,13 @@ export const verifyGitHubToken = async () => {
       }
     }
 
-    // If no cached data or expired, check with GitHub
+    // First check our status endpoint
+    const statusResponse = await fetch('/api/auth/status');
+    if (!statusResponse.ok) {
+      throw new Error('Not authenticated');
+    }
+
+    // If status check passes, verify with GitHub
     const response = await fetch('https://api.github.com/user', {
       headers: {
         'Authorization': `Bearer ${getSessionToken()}`,

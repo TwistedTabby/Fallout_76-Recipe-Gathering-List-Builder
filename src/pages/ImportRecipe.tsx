@@ -1,11 +1,27 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { addRecipe } from '../utils/recipeStorage'
+import { verifyGitHubToken } from '../utils/auth'
 
 export function ImportRecipe() {
   const [recipeJson, setRecipeJson] = useState('')
   const [error, setError] = useState('')
+  const [isLoading, setIsLoading] = useState(true)
   const navigate = useNavigate()
+
+  useEffect(() => {
+    const checkAuth = async () => {
+      const userData = await verifyGitHubToken()
+      if (!userData) {
+        // If not authenticated, redirect to login
+        navigate('/login')
+        return
+      }
+      setIsLoading(false)
+    }
+
+    checkAuth()
+  }, [navigate])
 
   const handleImport = async () => {
     try {
@@ -15,6 +31,10 @@ export function ImportRecipe() {
     } catch (e) {
       setError('Invalid JSON format')
     }
+  }
+
+  if (isLoading) {
+    return <div className="container mx-auto p-4">Loading...</div>
   }
 
   return (

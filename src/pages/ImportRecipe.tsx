@@ -1,60 +1,40 @@
-import React, { useState } from 'react';
+import { useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { addRecipe } from '../utils/recipeStorage'
 
-export const ImportRecipe: React.FC = () => {
-  const [jsonInput, setJsonInput] = useState('');
-  const [message, setMessage] = useState('');
+export function ImportRecipe() {
+  const [recipeJson, setRecipeJson] = useState('')
+  const [error, setError] = useState('')
+  const navigate = useNavigate()
 
   const handleImport = async () => {
     try {
-      // Validate JSON
-      const recipe = JSON.parse(jsonInput);
-      
-      // Create filename from recipe name
-      const fileName = recipe.recipe_name
-        .toLowerCase()
-        .replace(/[^a-z0-9]+/g, '-')
-        .replace(/(^-|-$)/g, '') + '.json';
-
-      // In Electron, save locally
-      if (window.electron) {
-        // Electron file saving logic here
-        setMessage(`Recipe saved locally as ${fileName}`);
-        return;
-      }
-
-      // In web, upload to R2
-      const response = await fetch('/api/recipes/upload', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ recipe, fileName })
-      });
-
-      if (response.ok) {
-        setMessage('Recipe uploaded successfully!');
-        setJsonInput('');
-      } else {
-        throw new Error('Upload failed');
-      }
-    } catch (error) {
-      setMessage(`Error: ${error.message}`);
+      const recipe = JSON.parse(recipeJson)
+      await addRecipe(recipe)
+      navigate('/')
+    } catch (e) {
+      setError('Invalid JSON format')
     }
-  };
+  }
 
   return (
-    <div className="import-recipe">
-      <h1>Import Recipe</h1>
-      <div className="form-group">
-        <label htmlFor="jsonInput">Paste Recipe JSON:</label>
+    <div className="container mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Import Recipe</h1>
+      <div className="mb-4">
         <textarea
-          id="jsonInput"
-          value={jsonInput}
-          onChange={(e) => setJsonInput(e.target.value)}
-          rows={10}
+          className="w-full h-64 p-2 border rounded"
+          value={recipeJson}
+          onChange={(e) => setRecipeJson(e.target.value)}
           placeholder="Paste recipe JSON here..."
         />
       </div>
-      <button onClick={handleImport}>Import Recipe</button>
-      {message && <div className="message">{message}</div>}
+      {error && <div className="text-red-500 mb-4">{error}</div>}
+      <button
+        className="bg-blue-500 text-white px-4 py-2 rounded"
+        onClick={handleImport}
+      >
+        Import Recipe
+      </button>
     </div>
-  );
-}; 
+  )
+} 

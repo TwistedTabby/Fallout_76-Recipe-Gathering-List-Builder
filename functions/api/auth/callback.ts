@@ -39,10 +39,10 @@ export async function onRequest(context: Context) {
 
     // Get the origin from the request URL
     const url = new URL(context.request.url);
-    const redirectUrl = `${url.protocol}//${url.host}`;
+    const redirectUrl = new URL(context.request.url).searchParams.get('state') || '/';
 
     // If successful, redirect to the main application with absolute URL
-    return Response.redirect(redirectUrl, 302);
+    return Response.redirect(`${redirectUrl}?auth_success=true`, 302);
   } catch (error) {
     // Log the actual error
     console.error('Authentication error:', error);

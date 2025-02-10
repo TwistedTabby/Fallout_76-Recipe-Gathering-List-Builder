@@ -88,3 +88,5 @@ config.dev.js
 *.sqlite
 *.sqlite3
 *.db
+
+.cursorrc

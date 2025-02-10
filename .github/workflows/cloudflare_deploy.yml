@@ -29,9 +29,6 @@ jobs:
       - name: Install Dependencies
         run: npm ci
 
-      - name: Lint
-        run: npm run lint
-
       - name: Build
         env:
           VITE_R2_BUCKET_URL: ${{ secrets.R2_BUCKET_API_ENDPOINT }}

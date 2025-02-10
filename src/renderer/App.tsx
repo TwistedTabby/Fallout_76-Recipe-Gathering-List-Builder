@@ -1,43 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
-import { Container, Box } from '@mui/material';
+import React from 'react';
+import { HashRouter as Router, Routes, Route } from 'react-router-dom';
+import Navbar from '../components/Navbar';
+import { ImportRecipe } from '../pages/ImportRecipe';
 import { Recipe, GatheringList } from '../shared/types';
 
-const darkTheme = createTheme({
-  palette: {
-    mode: 'dark',
-    primary: {
-      main: '#4CAF50',
-    },
-    secondary: {
-      main: '#FFC107',
-    },
-  },
-});
-
 const App: React.FC = () => {
-  const [recipes, setRecipes] = useState<Recipe[]>([]);
-  const [gatheringLists, setGatheringLists] = useState<GatheringList[]>([]);
-
-  useEffect(() => {
-    // Load saved gathering lists from localStorage
-    const savedLists = localStorage.getItem('gatheringLists');
-    if (savedLists) {
-      setGatheringLists(JSON.parse(savedLists));
-    }
-  }, []);
-
   return (
-    <ThemeProvider theme={darkTheme}>
-      <CssBaseline />
-      <Container>
-        <Box sx={{ my: 4 }}>
-          <h1>Fallout 76 Gathering List Builder</h1>
-          {/* Add your components here */}
-        </Box>
-      </Container>
-    </ThemeProvider>
+    <Router>
+      <div className="min-h-screen bg-base-100">
+        <Navbar />
+        <main className="container mx-auto px-4 py-8">
+          <Routes>
+            <Route path="/" element={<div>Home Page</div>} />
+            <Route path="/recipes" element={<div>Recipes Page</div>} />
+            <Route path="/import" element={<ImportRecipe />} />
+          </Routes>
+        </main>
+      </div>
+    </Router>
   );
 };
 

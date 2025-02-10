@@ -50,7 +50,7 @@ jobs:
       - name: Create Recipes Directory in R2
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
-          curl -X PUT "https://${{ secrets.CLOUDFLARE_ACCOUNT_ID }}.r2.cloudflarestorage.com/${{ secrets.R2_BUCKET_NAME }}/recipes/" \
+          curl -X PUT "${{ secrets.R2_BUCKET_API_ENDPOINT }}/${{ secrets.R2_BUCKET_NAME }}/recipes/" \
           -H "Authorization: AWS4-HMAC-SHA256 Credential=${{ secrets.R2_READWRITE_ACCESS_KEY_ID }}" \
           -H "x-amz-content-sha256: e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" \
           -H "x-amz-date: $(date -u +%Y%m%dT%H%M%SZ)"

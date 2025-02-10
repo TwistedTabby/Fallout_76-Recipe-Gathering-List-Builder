@@ -2,6 +2,7 @@
   "name": "fo76-gathering-list-builder",
   "version": "1.0.0",
   "description": "Fallout 76 Gathering List Builder for recipes and chems",
+  "type": "module",
   "main": "dist/electron/main.js",
   "scripts": {
     "dev": "vite",

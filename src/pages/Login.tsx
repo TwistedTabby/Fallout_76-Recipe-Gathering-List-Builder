@@ -1,7 +1,7 @@
 import React from 'react';
 import { initiateGitHubLogin } from '../utils/auth';
 
-export function Login() {
+export default function Login() {
   return (
     <div className="login-container">
       <h1>Login</h1>

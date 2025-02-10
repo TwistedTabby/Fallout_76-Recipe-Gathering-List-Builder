@@ -14,23 +14,16 @@ export async function getAllRecipes(): Promise<Recipe[]> {
   return response.json();
 }
 
-// For Electron, we'll add local caching
-export async function cacheRecipes(): Promise<void> {
-  if (!window.electron) return; // Skip if not in Electron
-  const recipes = await getAllRecipes();
-  localStorage.setItem('recipes-cache', JSON.stringify(recipes));
-}
-
-export function addRecipe(recipe: Recipe) {
-  const recipes = getRecipes();
-  recipes.push(recipe);
-  localStorage.setItem('recipes', JSON.stringify(recipes));
-  return recipes;
-}
-
 export async function loadRecipes(): Promise<Recipe[]> {
   const recipesJson = localStorage.getItem('recipes');
   return recipesJson ? JSON.parse(recipesJson) : [];
+}
+
+export async function addRecipe(recipe: Recipe) {
+  const recipes = await loadRecipes();
+  recipes.push(recipe);
+  localStorage.setItem('recipes', JSON.stringify(recipes));
+  return recipes;
 }
 
 export async function saveRecipe(recipe: Recipe): Promise<void> {

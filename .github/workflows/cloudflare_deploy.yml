@@ -52,8 +52,11 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           command: |
-            r2 object put ${{ secrets.R2_BUCKET_NAME }}/recipes/* --file recipes/*
-            r2 object put ${{ secrets.R2_BUCKET_NAME }}/recipes/index.json --file recipes/index.json
+            for file in recipes/*; do
+              if [ -f "$file" ]; then
+                r2 object put ${{ secrets.R2_BUCKET_NAME }}/"$file" --file "$file"
+              fi
+            done
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         env:

@@ -1,4 +1,5 @@
 import React from 'react';
+import { strings } from '../constants/strings';
 
 const Navbar: React.FC = () => {
   return (
@@ -7,7 +8,7 @@ const Navbar: React.FC = () => {
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
-              <span className="text-white text-xl font-bold">Recipe Manager</span>
+              <span className="text-white text-xl font-bold">{strings.appTitle}</span>
             </div>
           </div>
           <div className="hidden md:block">

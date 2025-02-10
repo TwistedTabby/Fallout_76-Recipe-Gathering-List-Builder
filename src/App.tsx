@@ -1,7 +1,12 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import Navbar from './components/Navbar';
+import { strings } from './constants/strings';
 
 function App() {
+  useEffect(() => {
+    document.title = strings.appTitle;
+  }, []);
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
@@ -12,7 +17,7 @@ function App() {
               Welcome to Recipe Manager
             </h1>
             <p className="text-gray-600">
-              Your personal space for managing and organizing recipes.
+              Your personal space for managing and organizing recipes that you want to make in Fallout 76.
             </p>
           </div>
         </div>

@@ -1,52 +1,33 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { verifyGitHubToken } from '../utils/auth';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function verifyAuth() {
-      // Check URL parameters for auth_success
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('auth_success') === 'true') {
+    async function checkAuth() {
+      // First check for session cookie
+      const hasSession = document.cookie.includes('session=');
+      
+      if (hasSession) {
         const userData = await verifyGitHubToken();
         if (userData) {
-          localStorage.setItem('isAuthenticated', 'true');
           setIsAuthenticated(true);
-          // Clean up URL
-          navigate('/', { replace: true });
-        }
-      } else {
-        // Check if already authenticated
-        const storedAuth = localStorage.getItem('isAuthenticated');
-        if (storedAuth === 'true') {
-          const userData = await verifyGitHubToken();
-          setIsAuthenticated(!!userData);
+          setIsLoading(false);
+          return;
         }
       }
+      
+      setIsAuthenticated(false);
       setIsLoading(false);
     }
 
-    verifyAuth();
-  }, [navigate]);
-
-  // If authenticated, redirect to home
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, navigate]);
-
-  useEffect(() => {
-    // Check for session cookie
-    const hasSession = document.cookie.includes('session=');
-    setIsAuthenticated(hasSession);
+    checkAuth();
   }, []);
 
   if (isLoading) {
@@ -54,7 +35,7 @@ export default function Login() {
   }
 
   if (isAuthenticated) {
-    return null; // Or return <Navigate to="/import" /> if you want to redirect
+    return <Navigate to="/import" replace />;
   }
 
   const handleGitHubLogin = () => {

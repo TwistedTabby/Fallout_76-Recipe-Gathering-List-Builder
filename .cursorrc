@@ -1,0 +1,24 @@
+{
+  "framework": "react",
+  "language": "typescript",
+  "packageManager": "npm",
+  "rules": {
+    "dependencies": {
+      "direct": true,
+      "allowList": [
+        "react",
+        "react-dom",
+        "typescript",
+        "@types/react",
+        "@types/react-dom"
+      ]
+    },
+    "devDependencies": {
+      "direct": true,
+      "allowList": [
+        "vite",
+        "@vitejs/plugin-react-swc"
+      ]
+    }
+  }
+} 

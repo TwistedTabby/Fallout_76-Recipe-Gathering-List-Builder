@@ -62,8 +62,10 @@ export const getSessionToken = () => {
     ?.split('=')[1];
 };
 
-const GITHUB_CLIENT_ID = BASE_URL;
-const REDIRECT_URI = `${BASE_URL}/api/auth/callback`;
+const apiUrl = import.meta.env.VITE_BASE_URL;
+
+const GITHUB_CLIENT_ID = apiUrl;
+const REDIRECT_URI = `${apiUrl}/api/auth/callback`;
 
 export function initiateGitHubLogin() {
   // We'll make a request to our own API endpoint to get the auth URL

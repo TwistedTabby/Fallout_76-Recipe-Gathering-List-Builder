@@ -37,8 +37,12 @@ export async function onRequest(context: Context) {
       return new Response('Invalid OAuth response', { status: 400 });
     }
 
-    // If successful, redirect to the main application
-    return Response.redirect('/', 302);
+    // Get the origin from the request URL
+    const url = new URL(context.request.url);
+    const redirectUrl = `${url.protocol}//${url.host}`;
+
+    // If successful, redirect to the main application with absolute URL
+    return Response.redirect(redirectUrl, 302);
   } catch (error) {
     // Log the actual error
     console.error('Authentication error:', error);

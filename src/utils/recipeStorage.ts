@@ -20,3 +20,10 @@ export async function cacheRecipes(): Promise<void> {
   const recipes = await getAllRecipes();
   localStorage.setItem('recipes-cache', JSON.stringify(recipes));
 }
+
+export function addRecipe(recipe: Recipe) {
+  const recipes = getRecipes();
+  recipes.push(recipe);
+  localStorage.setItem('recipes', JSON.stringify(recipes));
+  return recipes;
+}

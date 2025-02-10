@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
 
-export const Login: React.FC = () => {
+export default function Login() {
   const { login } = useAuth();
 
   return (
@@ -11,4 +11,4 @@ export const Login: React.FC = () => {
       <button onClick={login}>Login with GitHub</button>
     </div>
   );
-}; 
+} 

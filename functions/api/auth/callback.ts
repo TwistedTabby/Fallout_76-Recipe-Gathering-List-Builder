@@ -39,13 +39,13 @@ export async function onRequest(context: Context) {
 
     // Get the origin from the request URL
     const url = new URL(context.request.url);
-    const redirectUrl = new URL(context.request.url).searchParams.get('state') || '/';
+    const redirectUrl = new URL("/import", url);
 
     // If successful, redirect to the main application with absolute URL
     const response = new Response(null, {
       status: 302,
       headers: {
-        'Location': `${redirectUrl}?auth_success=true`,
+        'Location': redirectUrl.toString(),
         // Add a Set-Cookie header to store the session
         'Set-Cookie': `session=${data.access_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000` // 30 days
       }

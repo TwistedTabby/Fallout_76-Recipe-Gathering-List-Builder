@@ -3,17 +3,32 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import RecipeList from './pages/RecipeList';
 import GatheringList from './pages/GatheringList';
+import { ImportRecipe } from './pages/ImportRecipe';
+import { AuthProvider } from './context/AuthContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import Login from './pages/Login';
 
 function App() {
   return (
-    <Router>
-      <Layout>
-        <Routes>
-          <Route path="/" element={<RecipeList />} />
-          <Route path="/gathering-list" element={<GatheringList />} />
-        </Routes>
-      </Layout>
-    </Router>
+    <AuthProvider>
+      <Router>
+        <Layout>
+          <Routes>
+            <Route path="/" element={<RecipeList />} />
+            <Route path="/gathering-list" element={<GatheringList />} />
+            <Route 
+              path="/import" 
+              element={
+                <ProtectedRoute requiresCollaborator>
+                  <ImportRecipe />
+                </ProtectedRoute>
+              } 
+            />
+            <Route path="/login" element={<Login />} />
+          </Routes>
+        </Layout>
+      </Router>
+    </AuthProvider>
   );
 }
 

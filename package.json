@@ -9,12 +9,14 @@
     "preview": "vite preview",
     "electron:dev": "concurrently \"vite\" \"electron .\"",
     "electron:build": "vite build && electron-builder",
-    "pages:deploy": "vite build && wrangler pages publish dist"
+    "pages:deploy": "vite build && wrangler pages publish dist",
+    "build:data": "tsx scripts/build-recipe-data.ts"
   },
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.22.3"
+    "react-router-dom": "^6.22.3",
+    "better-sqlite3": "^8.7.0"
   },
   "devDependencies": {
     "@types/react": "^18.2.64",

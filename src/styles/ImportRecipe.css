@@ -1,0 +1,40 @@
+.import-recipe {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+}
+
+.form-group textarea {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid var(--secondary-color);
+  border-radius: 4px;
+  background: var(--background-color);
+  color: var(--text-color);
+  font-family: monospace;
+}
+
+.message {
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 4px;
+}
+
+.message.error {
+  background: #ff444420;
+  border: 1px solid #ff4444;
+}
+
+.message.success {
+  background: #44ff4420;
+  border: 1px solid #44ff44;
+} 

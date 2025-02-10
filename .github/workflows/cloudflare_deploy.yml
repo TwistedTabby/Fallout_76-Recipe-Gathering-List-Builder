@@ -1,3 +1,5 @@
+# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
+
 name: Deploy to Cloudflare Pages
 
 on:
@@ -30,6 +32,8 @@ jobs:
           npm ci
 
       - name: Build
+        env:
+          VITE_R2_BUCKET_URL: ${{ secrets.R2_BUCKET_API_ENDPOINT }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages
@@ -41,4 +45,18 @@ jobs:
           command: pages deploy dist --project-name="fo76-gather"
         env:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }} 
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Upload Recipes to R2
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        uses: cloudflare/wrangler-action@v3
+        with:
+          command: |
+            r2 objects put recipes/ --bucket-name=${{ secrets.R2_BUCKET_NAME }}
+            r2 objects put recipes/index.json --bucket-name=${{ secrets.R2_BUCKET_NAME }}
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        env:
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_READWRITE_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_READWRITE_SECRET_ACCESS_KEY }}
+          R2_BUCKET_NAME: ${{ secrets.R2_BUCKET_NAME }} 

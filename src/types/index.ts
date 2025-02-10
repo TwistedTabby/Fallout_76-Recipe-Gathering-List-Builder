@@ -1,10 +1,14 @@
 export interface Recipe {
-  id: string;
-  name: string;
-  category: Category;
-  types: Type[];
-  ingredients: Ingredient[];
-  buffs: Buff[];
+  recipe_name: string;
+  ingredients: {
+    ingredient: string;
+    quantity: number;
+  }[];
+  buffs: {
+    buff: string;
+    SPECIAL: 'STR' | 'PER' | 'END' | 'CHR' | 'INT' | 'AGI' | 'LCK';
+    duration: string;
+  }[];
 }
 
 export interface Category {

@@ -1,5 +1,4 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
 
 interface LayoutProps {
   children: React.ReactNode;
@@ -7,17 +6,13 @@ interface LayoutProps {
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
-    <div>
-      <header>
-        <nav>
-          <ul>
-            <li><Link to="/">Recipes</Link></li>
-            <li><Link to="/gathering-list">Gathering List</Link></li>
-            <li><Link to="/import">Import Recipe</Link></li>
-          </ul>
-        </nav>
-      </header>
-      <main className="container">
+    <div className="min-h-screen bg-gray-50">
+      <nav className="bg-white shadow-sm">
+        <div className="container mx-auto px-4 py-3">
+          <h1 className="text-xl font-semibold">Recipe Manager</h1>
+        </div>
+      </nav>
+      <main>
         {children}
       </main>
     </div>

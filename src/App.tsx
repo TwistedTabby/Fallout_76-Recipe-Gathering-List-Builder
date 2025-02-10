@@ -7,6 +7,7 @@ import { ImportRecipe } from './pages/ImportRecipe';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import Login from './pages/Login';
+import Home from './pages/Home';
 
 function App() {
   return (
@@ -14,7 +15,8 @@ function App() {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<RecipeList />} />
+            <Route path="/" element={<Home />} />
+            <Route path="/recipe-list" element={<RecipeList />} />
             <Route path="/gathering-list" element={<GatheringList />} />
             <Route 
               path="/import" 

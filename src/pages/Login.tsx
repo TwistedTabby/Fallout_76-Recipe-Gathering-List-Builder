@@ -43,8 +43,18 @@ export default function Login() {
     }
   }, [isAuthenticated, navigate]);
 
+  useEffect(() => {
+    // Check for session cookie
+    const hasSession = document.cookie.includes('session=');
+    setIsAuthenticated(hasSession);
+  }, []);
+
   if (isLoading) {
     return <div>Loading...</div>;
+  }
+
+  if (isAuthenticated) {
+    return null; // Or return <Navigate to="/import" /> if you want to redirect
   }
 
   const handleGitHubLogin = () => {

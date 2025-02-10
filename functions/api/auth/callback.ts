@@ -24,10 +24,26 @@ export async function onRequest(context: Context) {
 
     const data = await tokenResponse.json();
     
-    // Store the token or handle the authentication response
-    // Redirect to the main application
+    // Check if the response contains an error
+    if (data.error) {
+      console.error('GitHub OAuth error:', data);
+      return new Response(`GitHub OAuth error: ${data.error_description || data.error}`, { 
+        status: 400 
+      });
+    }
+
+    if (!data.access_token) {
+      console.error('No access token received:', data);
+      return new Response('Invalid OAuth response', { status: 400 });
+    }
+
+    // If successful, redirect to the main application
     return Response.redirect('/', 302);
   } catch (error) {
-    return new Response('Authentication failed', { status: 500 });
+    // Log the actual error
+    console.error('Authentication error:', error);
+    return new Response(`Authentication failed: ${error.message}`, { 
+      status: 500 
+    });
   }
 } 

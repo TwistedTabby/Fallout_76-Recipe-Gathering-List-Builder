@@ -1,11 +1,16 @@
-import { Context } from '../../src/types/cloudflare';
+import { Context } from '../../../src/types/cloudflare';
 
 export async function onRequest(context: Context) {
   const { searchParams } = new URL(context.request.url);
   const code = searchParams.get('code');
   
   if (!code) {
-    return new Response('No code provided', { status: 400 });
+    return new Response(JSON.stringify({ error: 'No code provided' }), { 
+      status: 400,
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
   }
 
   try {
@@ -24,38 +29,49 @@ export async function onRequest(context: Context) {
 
     const data = await tokenResponse.json();
     
-    // Check if the response contains an error
     if (data.error) {
       console.error('GitHub OAuth error:', data);
-      return new Response(`GitHub OAuth error: ${data.error_description || data.error}`, { 
-        status: 400 
+      return new Response(JSON.stringify({ 
+        error: 'GitHub OAuth error',
+        details: data.error_description || data.error 
+      }), { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        }
       });
     }
 
     if (!data.access_token) {
       console.error('No access token received:', data);
-      return new Response('Invalid OAuth response', { status: 400 });
+      return new Response(JSON.stringify({ error: 'Invalid OAuth response' }), { 
+        status: 400,
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
     }
 
-    // Get the origin from the request URL
     const url = new URL(context.request.url);
     const redirectUrl = new URL("/import", url);
 
-    // If successful, redirect to the main application with absolute URL
-    const response = new Response(null, {
+    return new Response(null, {
       status: 302,
       headers: {
         'Location': redirectUrl.toString(),
-        // Add a Set-Cookie header to store the session
-        'Set-Cookie': `session=${data.access_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000` // 30 days
+        'Set-Cookie': `session=${data.access_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000`
       }
     });
-    return response;
   } catch (error) {
-    // Log the actual error
     console.error('Authentication error:', error);
-    return new Response(`Authentication failed: ${error.message}`, { 
-      status: 500 
+    return new Response(JSON.stringify({ 
+      error: 'Authentication failed',
+      details: error.message 
+    }), { 
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json'
+      }
     });
   }
 } 

@@ -6,5 +6,6 @@ export interface Env {
 
 export interface Context {
   env: Env;
+  request: Request;
   // Add other context properties as needed
 } 

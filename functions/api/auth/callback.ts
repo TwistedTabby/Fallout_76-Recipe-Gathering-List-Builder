@@ -42,7 +42,15 @@ export async function onRequest(context: Context) {
     const redirectUrl = new URL(context.request.url).searchParams.get('state') || '/';
 
     // If successful, redirect to the main application with absolute URL
-    return Response.redirect(`${redirectUrl}?auth_success=true`, 302);
+    const response = new Response(null, {
+      status: 302,
+      headers: {
+        'Location': `${redirectUrl}?auth_success=true`,
+        // Add a Set-Cookie header to store the session
+        'Set-Cookie': `session=${data.access_token}; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=2592000` // 30 days
+      }
+    });
+    return response;
   } catch (error) {
     // Log the actual error
     console.error('Authentication error:', error);

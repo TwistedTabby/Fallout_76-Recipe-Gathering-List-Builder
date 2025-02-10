@@ -1,20 +1,35 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import { verifyGitHubToken } from '../utils/auth';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiresCollaborator?: boolean;
 }
 
-export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ 
-  children, 
-  requiresCollaborator = false 
-}) => {
-  const { isAuthenticated, isCollaborator } = useAuth();
+export function ProtectedRoute({ children, requiresCollaborator = false }: ProtectedRouteProps) {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    async function checkAuth() {
+      const storedAuth = localStorage.getItem('isAuthenticated');
+      if (storedAuth === 'true') {
+        const userData = await verifyGitHubToken();
+        setIsAuthenticated(!!userData);
+      } else {
+        setIsAuthenticated(false);
+      }
+    }
+
+    checkAuth();
+  }, []);
+
+  if (isAuthenticated === null) {
+    return <div>Loading...</div>;
+  }
 
   if (!isAuthenticated) {
-    return <Navigate to="/login" />;
+    return <Navigate to="/login" replace />;
   }
 
   if (requiresCollaborator && !isCollaborator) {
@@ -22,4 +37,4 @@ export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   }
 
   return <>{children}</>;
-}; 
+} 

@@ -1,19 +1,51 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { verifyGitHubToken } from '../utils/auth';
 
 export default function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for auth_success parameter
-    const authSuccess = new URLSearchParams(location.search).get('auth_success');
-    if (authSuccess === 'true') {
-      navigate('/import');
+    async function verifyAuth() {
+      // Check URL parameters for auth_success
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('auth_success') === 'true') {
+        const userData = await verifyGitHubToken();
+        if (userData) {
+          localStorage.setItem('isAuthenticated', 'true');
+          setIsAuthenticated(true);
+          // Clean up URL
+          navigate('/', { replace: true });
+        }
+      } else {
+        // Check if already authenticated
+        const storedAuth = localStorage.getItem('isAuthenticated');
+        if (storedAuth === 'true') {
+          const userData = await verifyGitHubToken();
+          setIsAuthenticated(!!userData);
+        }
+      }
+      setIsLoading(false);
     }
-  }, [location, navigate]);
+
+    verifyAuth();
+  }, [navigate]);
+
+  // If authenticated, redirect to home
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, navigate]);
+
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   const handleGitHubLogin = () => {
     window.location.href = '/api/auth/github';

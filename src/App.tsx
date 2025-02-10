@@ -11,6 +11,9 @@ function App() {
           {/* Other routes will be added here */}
         </Route>
       </Routes>
+      <div>
+        <button className="btn btn-primary">Click me!</button>
+      </div>
     </Router>
   );
 }

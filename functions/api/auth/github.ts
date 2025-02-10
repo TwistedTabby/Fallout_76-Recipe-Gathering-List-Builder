@@ -1,27 +1,29 @@
-import { Context } from '../../../src/types/cloudflare';
+import { Env } from '../../../src/types/cloudflare';
 
-export async function onRequest(context: Context) {
+export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
-    const clientId = context.env.GITHUB_CLIENT_ID;
-    if (!clientId) {
-      return new Response(JSON.stringify({ error: 'GitHub client ID not configured' }), {
-        status: 500,
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
+    const { GITHUB_CLIENT_ID, BASE_URL } = context.env;
+    
+    if (!GITHUB_CLIENT_ID || !BASE_URL) {
+      throw new Error('Missing required environment variables');
     }
 
-    const redirectUri = 'https://fo76-gather.twistedtabby.com/api/auth/callback';
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&scope=user`;
+    const redirectUri = `${BASE_URL}/api/auth/callback`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&redirect_uri=${encodeURIComponent(redirectUri)}&scope=read:user`;
     
-    return Response.redirect(githubAuthUrl, 302);
+    return new Response(null, {
+      status: 302,
+      headers: {
+        Location: githubAuthUrl
+      }
+    });
   } catch (error) {
-    return new Response(JSON.stringify({ error: 'Authentication failed' }), {
+    console.error('GitHub auth error:', error);
+    return new Response(JSON.stringify({ error: 'Authentication configuration error' }), {
       status: 500,
       headers: {
         'Content-Type': 'application/json'
       }
     });
   }
-} 
+}; 

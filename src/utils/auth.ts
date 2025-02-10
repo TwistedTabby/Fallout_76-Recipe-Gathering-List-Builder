@@ -62,17 +62,12 @@ export const getSessionToken = () => {
     ?.split('=')[1];
 };
 
-export async function initiateGitHubLogin() {
-  const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
-  const redirectUri = `${window.location.origin}/api/auth/callback`;
-  
-  const params = new URLSearchParams({
-    client_id: clientId,
-    redirect_uri: redirectUri,
-    scope: 'read:user',
-  });
+const GITHUB_CLIENT_ID = BASE_URL;
+const REDIRECT_URI = `${BASE_URL}/api/auth/callback`;
 
-  window.location.href = `https://github.com/login/oauth/authorize?${params}`;
+export function initiateGitHubLogin() {
+  // We'll make a request to our own API endpoint to get the auth URL
+  window.location.href = '/api/auth/github';
 }
 
 export async function handleAuthCallback(code: string): Promise<void> {

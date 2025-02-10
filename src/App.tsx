@@ -8,17 +8,18 @@ function App() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-base-200">
       <Navbar />
-      <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-        <div className="px-4 py-6 sm:px-0">
-          <div className="bg-white rounded-lg shadow-sm p-6">
-            <h1 className="text-3xl font-bold text-gray-900 mb-4">
-              Welcome to Recipe Manager
-            </h1>
-            <p className="text-gray-600">
+      <main className="container mx-auto px-4 py-8">
+        <div className="card bg-base-100 shadow-xl">
+          <div className="card-body">
+            <h1 className="card-title text-3xl">{strings.appTitle}</h1>
+            <p className="text-base-content/70">
               Your personal space for managing and organizing recipes that you want to make in Fallout 76.
             </p>
+            <div className="card-actions justify-end">
+              <button className="btn btn-primary">Get Started</button>
+            </div>
           </div>
         </div>
       </main>

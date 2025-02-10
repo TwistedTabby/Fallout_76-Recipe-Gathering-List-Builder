@@ -1,4 +1,4 @@
-# Node.js dependencies
+# Dependencies
 node_modules/
 npm-debug.log
 yarn-error.log
@@ -40,10 +40,14 @@ build/
 .env.test
 
 # IDEs and editors
-.vscode/
-.idea/
-*.sublime-project
-*.sublime-workspace
+.vscode/*
+!.vscode/extensions.json
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
 
 # Electron
 electron-builder.yaml
@@ -90,3 +94,13 @@ config.dev.js
 *.db
 
 .cursorrc
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Additional changes from the code block
+lerna-debug.log*

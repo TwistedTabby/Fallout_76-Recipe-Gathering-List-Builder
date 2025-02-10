@@ -52,8 +52,8 @@ jobs:
         uses: cloudflare/wrangler-action@v3
         with:
           command: |
-            r2 objects put recipes/ --bucket-name=${{ secrets.R2_BUCKET_NAME }}
-            r2 objects put recipes/index.json --bucket-name=${{ secrets.R2_BUCKET_NAME }}
+            r2 object put recipes/* ${{ secrets.R2_BUCKET_NAME }}
+            r2 object put recipes/index.json ${{ secrets.R2_BUCKET_NAME }}
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         env:

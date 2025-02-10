@@ -60,4 +60,36 @@ export const getSessionToken = () => {
     .split('; ')
     .find(row => row.startsWith('session='))
     ?.split('=')[1];
+};
+
+export async function initiateGitHubLogin() {
+  const clientId = import.meta.env.VITE_GITHUB_CLIENT_ID;
+  const redirectUri = `${window.location.origin}/api/auth/callback`;
+  
+  const params = new URLSearchParams({
+    client_id: clientId,
+    redirect_uri: redirectUri,
+    scope: 'read:user',
+  });
+
+  window.location.href = `https://github.com/login/oauth/authorize?${params}`;
+}
+
+export async function handleAuthCallback(code: string): Promise<void> {
+  try {
+    const response = await fetch(`/api/auth/github?code=${code}`);
+    if (!response.ok) {
+      throw new Error('Authentication failed');
+    }
+    const data = await response.json();
+    setAuthToken(data.access_token);
+  } catch (error) {
+    console.error('Error during authentication:', error);
+    throw error;
+  }
+}
+
+export const setAuthToken = (token: string) => {
+  document.cookie = `session=${token}; Path=/;`;
+  localStorage.setItem('isAuthenticated', 'true');
 }; 

@@ -27,3 +27,20 @@ export function addRecipe(recipe: Recipe) {
   localStorage.setItem('recipes', JSON.stringify(recipes));
   return recipes;
 }
+
+export async function loadRecipes(): Promise<Recipe[]> {
+  const recipesJson = localStorage.getItem('recipes');
+  return recipesJson ? JSON.parse(recipesJson) : [];
+}
+
+export async function saveRecipe(recipe: Recipe): Promise<void> {
+  const recipes = await loadRecipes();
+  recipes.push(recipe);
+  localStorage.setItem('recipes', JSON.stringify(recipes));
+}
+
+export async function deleteRecipe(recipeId: string): Promise<void> {
+  const recipes = await loadRecipes();
+  const updatedRecipes = recipes.filter(recipe => recipe.recipeId !== recipeId);
+  localStorage.setItem('recipes', JSON.stringify(updatedRecipes));
+}

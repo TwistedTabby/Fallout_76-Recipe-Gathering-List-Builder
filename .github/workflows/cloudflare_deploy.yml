@@ -34,6 +34,8 @@ jobs:
       - name: Build
         env:
           VITE_R2_BUCKET_URL: ${{ secrets.R2_BUCKET_API_ENDPOINT }}
+          VITE_GITHUB_CLIENT_ID: ${{ secrets.GITHUB_CLIENT_ID }}
+          VITE_API_URL: ${{ secrets.API_URL }}
         run: npm run build
 
       - name: Deploy to Cloudflare Pages

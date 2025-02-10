@@ -7,7 +7,9 @@ function createWindow() {
     height: 800,
     webPreferences: {
       nodeIntegration: true,
-      contextIsolation: false
+      contextIsolation: false,
+      webSecurity: false, // Only during development
+      devTools: process.env.NODE_ENV === 'development'
     }
   });
 
@@ -17,20 +19,31 @@ function createWindow() {
     win.webContents.openDevTools();
   } else {
     // In production, load from the built files
-    win.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    // Use file protocol
+    win.loadFile(indexPath);
+  }
+
+  // Enable hot reload in development
+  if (process.env.NODE_ENV === 'development') {
+    win.webContents.on('did-fail-load', () => {
+      win.loadURL('http://localhost:5173');
+    });
   }
 }
 
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+  createWindow();
+
+  app.on('activate', () => {
+    if (BrowserWindow.getAllWindows().length === 0) {
+      createWindow();
+    }
+  });
+});
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
-  }
-});
-
-app.on('activate', () => {
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow();
   }
 }); 

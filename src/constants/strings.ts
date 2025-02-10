@@ -1,3 +1,8 @@
 export const strings = {
-  appTitle: "Fallout 76 Recipe Manager"
-} as const; 
+  appTitle: 'FO76 Recipe Manager',
+  nav: {
+    home: 'Home',
+    recipes: 'Recipes',
+    import: 'Import Recipe'
+  }
+}; 

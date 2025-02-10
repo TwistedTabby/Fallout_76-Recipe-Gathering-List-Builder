@@ -1,41 +1,23 @@
-import { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { addRecipe } from '../utils/recipeStorage';
-import { verifyGitHubToken } from '../utils/auth';
-import styles from '../styles/ImportRecipe.module.css';
+import type { Recipe } from '../shared/types';
 
 interface ImportMessage {
   type: 'error' | 'success';
   text: string;
 }
 
-export function ImportRecipe() {
+export const ImportRecipe: React.FC = () => {
   const [recipeText, setRecipeText] = useState('');
   const [message, setMessage] = useState<ImportMessage | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
-
-  useEffect(() => {
-    const checkAuth = async () => {
-      const userData = await verifyGitHubToken();
-      if (!userData) {
-        navigate('/login');
-        return;
-      }
-      setIsLoading(false);
-    };
-
-    checkAuth();
-  }, [navigate]);
 
   const handleImport = async () => {
     try {
-      // First try to parse as JSON
-      let recipeData;
+      let recipeData: Recipe;
       try {
         recipeData = JSON.parse(recipeText);
       } catch {
-        // If JSON parse fails, try to parse as plain text format
         recipeData = parseRecipeText(recipeText);
       }
 
@@ -47,14 +29,13 @@ export function ImportRecipe() {
         return;
       }
 
-      await addRecipe(recipeData);
+      // TODO: Implement recipe storage
       setMessage({
         type: 'success',
         text: 'Recipe imported successfully!'
       });
       
-      // Navigate after a brief delay to show success message
-      setTimeout(() => navigate('/'), 1500);
+      setTimeout(() => navigate('/recipes'), 1500);
     } catch (e) {
       setMessage({
         type: 'error',
@@ -63,18 +44,14 @@ export function ImportRecipe() {
     }
   };
 
-  const parseRecipeText = (text: string) => {
-    // Split the text into lines and remove empty lines
+  const parseRecipeText = (text: string): Recipe => {
     const lines = text.split('\n').filter(line => line.trim());
     
     if (lines.length < 2) {
       throw new Error('Recipe must include at least a name and one ingredient');
     }
 
-    // First line is the recipe name
     const name = lines[0].trim();
-    
-    // Remaining lines are ingredients
     const ingredients = lines.slice(1).map(line => {
       const [quantity, item] = line.split('x').map(part => part.trim());
       if (!quantity || !item) {
@@ -86,18 +63,16 @@ export function ImportRecipe() {
       };
     });
 
-    return {
-      name,
-      ingredients
-    };
+    return { name, ingredients };
   };
 
-  const validateRecipeData = (data: any): boolean => {
+  const validateRecipeData = (data: unknown): data is Recipe => {
+    if (!data || typeof data !== 'object') return false;
+    const recipe = data as Recipe;
     return (
-      data &&
-      typeof data.name === 'string' &&
-      Array.isArray(data.ingredients) &&
-      data.ingredients.every((ing: any) =>
+      typeof recipe.name === 'string' &&
+      Array.isArray(recipe.ingredients) &&
+      recipe.ingredients.every(ing =>
         ing &&
         typeof ing.item === 'string' &&
         typeof ing.quantity === 'number'
@@ -105,17 +80,13 @@ export function ImportRecipe() {
     );
   };
 
-  if (isLoading) {
-    return <div className={styles.container}>Loading...</div>;
-  }
-
   return (
-    <div className={styles.container}>
-      <h1 className={styles.title}>Import Recipe</h1>
+    <div className="prose max-w-3xl mx-auto">
+      <h1>Import Recipe</h1>
       
-      <div className={styles.importArea}>
+      <div className="form-control w-full">
         <textarea
-          className={styles.textArea}
+          className="textarea textarea-bordered h-64 font-mono"
           value={recipeText}
           onChange={(e) => setRecipeText(e.target.value)}
           placeholder={`Enter recipe in either JSON format or plain text format:
@@ -137,13 +108,13 @@ Stimpak
       </div>
 
       {message && (
-        <div className={message.type === 'error' ? styles.error : styles.success}>
+        <div className={`alert ${message.type === 'error' ? 'alert-error' : 'alert-success'} mt-4`}>
           {message.text}
         </div>
       )}
 
       <button
-        className={styles.button}
+        className="btn btn-primary mt-4"
         onClick={handleImport}
         disabled={!recipeText.trim()}
       >
@@ -151,4 +122,4 @@ Stimpak
       </button>
     </div>
   );
-} 
+}; 

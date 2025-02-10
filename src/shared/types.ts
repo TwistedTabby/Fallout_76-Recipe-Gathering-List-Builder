@@ -9,7 +9,7 @@ export interface Type {
 }
 
 export interface Ingredient {
-  name: string;
+  item: string;
   quantity: number;
 }
 
@@ -20,12 +20,8 @@ export interface Buff {
 }
 
 export interface Recipe {
-  id: string;
   name: string;
-  category: Category;
-  types: Type[];
   ingredients: Ingredient[];
-  buffs: Buff[];
 }
 
 export interface GatheringList {

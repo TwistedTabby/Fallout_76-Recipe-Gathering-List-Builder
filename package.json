@@ -2,7 +2,7 @@
   "name": "fo76-gathering-list-builder",
   "version": "1.0.0",
   "description": "Fallout 76 Gathering List Builder for recipes and chems",
-  "main": "electron/main.js",
+  "main": "dist/electron/main.js",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
@@ -10,7 +10,10 @@
     "electron:dev": "concurrently \"vite\" \"electron .\"",
     "electron:build": "vite build && electron-builder",
     "pages:deploy": "vite build && wrangler pages publish dist",
-    "build:data": "tsx scripts/build-recipe-data.ts"
+    "build:data": "tsx scripts/build-recipe-data.ts",
+    "lint": "eslint src --ext .ts,.tsx",
+    "lint:fix": "eslint src --ext .ts,.tsx --fix",
+    "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\""
   },
   "dependencies": {
     "react": "^18.2.0",
@@ -27,7 +30,12 @@
     "electron-builder": "^24.12.0",
     "typescript": "^5.4.2",
     "vite": "^5.1.5",
-    "wrangler": "^3.32.0"
+    "wrangler": "^3.32.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.5",
+    "@types/better-sqlite3": "^7.6.9"
   },
   "build": {
     "appId": "com.fo76.gatheringlist",

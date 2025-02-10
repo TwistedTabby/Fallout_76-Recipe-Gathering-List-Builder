@@ -9,6 +9,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: CloudFlare
     permissions:
       contents: read
       deployments: write

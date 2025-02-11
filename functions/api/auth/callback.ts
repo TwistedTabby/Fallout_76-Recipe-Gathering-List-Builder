@@ -6,6 +6,8 @@ interface Env {
   JWT_SECRET: string;
 }
 
+const USER_AGENT = 'FO76-Recipe-Builder/1.0.0 (+https://fo76-gather.twistedtabby.com)';
+
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
     const url = new URL(context.request.url);
@@ -21,7 +23,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
-        'User-Agent': 'FO76-Recipe-Builder',
+        'User-Agent': USER_AGENT,
       },
       body: JSON.stringify({
         client_id: context.env.GITHUB_CLIENT_ID,
@@ -62,7 +64,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
         'Accept': 'application/json',
-        'User-Agent': 'FO76-Recipe-Builder',
+        'User-Agent': USER_AGENT,
       },
     });
 
@@ -78,12 +80,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     // Check if user is a collaborator
     const collaboratorResponse = await fetch(
-      'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators',
+      'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators?affiliation=all&per_page=100',
       {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Accept': 'application/json',
-          'User-Agent': 'FO76-Recipe-Builder',
+          'User-Agent': USER_AGENT,
+          'X-GitHub-Api-Version': '2022-11-28'
         },
       }
     );
@@ -97,12 +100,29 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     const collaborators = await collaboratorResponse.json();
-    const isCollaborator = collaborators.some(
-      (collaborator: { login: string }) => collaborator.login === userData.login
-    );
+    
+    // Check if user is in the list of collaborators
+    const isCollaborator = collaborators.some((collaborator: { 
+      login: string,
+      permissions?: {
+        admin?: boolean,
+        maintain?: boolean,
+        push?: boolean,
+        triage?: boolean,
+        pull?: boolean
+      }
+    }) => {
+      // Check if it's the same user
+      const isUser = collaborator.login === userData.login;
+      // Check if they have write access or higher
+      const hasAccess = collaborator.permissions?.admin || 
+                       collaborator.permissions?.maintain || 
+                       collaborator.permissions?.push;
+      return isUser && hasAccess;
+    });
 
     if (!isCollaborator) {
-      return new Response('Not authorized - must be a project collaborator', { 
+      return new Response('Not authorized - must be a project collaborator with write access or higher', { 
         status: 403 
       });
     }

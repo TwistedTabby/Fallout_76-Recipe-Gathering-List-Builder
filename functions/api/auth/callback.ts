@@ -79,6 +79,9 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
 
     const userData = await userResponse.json();
 
+    // Add logging to debug the user data
+    console.log('User data received:', JSON.stringify(userData));
+
     // Check if user is a collaborator using the specific user check endpoint
     const collaboratorResponse = await fetch(
       `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}`,
@@ -92,23 +95,26 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
       }
     );
 
-    if (collaboratorResponse.status === 404) {
-      return new Response('Not authorized - must be a project collaborator with write access or higher', { 
-        status: 403 
-      });
-    }
+    // Add logging for collaborator response
+    console.log('Collaborator response status:', collaboratorResponse.status);
+    const collaboratorText = await collaboratorResponse.text();
+    console.log('Collaborator response text:', collaboratorText);
 
-    if (!collaboratorResponse.ok) {
-      const collabErrorText = await collaboratorResponse.text();
-      console.error('Collaborator check failed:', collabErrorText);
-      return new Response(`Failed to check collaborator status: ${collaboratorResponse.status} ${collabErrorText}`, {
+    let permissionData;
+    try {
+      permissionData = JSON.parse(collaboratorText);
+    } catch (parseError) {
+      console.error('Failed to parse collaborator response:', parseError);
+      return new Response(`Failed to parse collaborator response: ${collaboratorText.slice(0, 100)}...`, {
         status: 500
       });
     }
 
-    const permissionData = await collaboratorResponse.json();
     const permission = permissionData.permission;
     
+    // Add logging for permission data
+    console.log('Permission data:', permission);
+
     // Check if user has sufficient permissions (write access or higher)
     const hasAccess = ['admin', 'maintain', 'write'].includes(permission);
 

@@ -1,5 +1,3 @@
-import ImportRecipe from "@/pages/import";
-
 export const strings = {
   appTitle: 'FO76 Gathering List',
   general: {
@@ -58,7 +56,7 @@ export const strings = {
   },
   importRecipe: {
     title: 'Import Recipe',
-    pasteRecipeJSON: 'Paste Recipe JSON',
+    pasteRecipeJSON: 'Paste your recipe JSON here',
     import: 'Import',
     invalidJSON: 'Invalid JSON',
     error: 'Error',

@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Layout } from '../components/Layout';
 import { strings } from '../constants/strings';
+import { Layout } from '../components/Layout';
 
 export default function ImportRecipe() {
   const [jsonInput, setJsonInput] = useState('');

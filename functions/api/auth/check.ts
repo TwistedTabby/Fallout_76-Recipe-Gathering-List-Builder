@@ -11,7 +11,7 @@ export async function onRequestGet(context) {
   // Verify the token is still valid and user is still a collaborator
   try {
     const collaboratorResponse = await fetch(
-      'https://api.github.com/repos/YOUR_USERNAME/YOUR_REPO/collaborators', {
+      'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators', {
       headers: {
         'Authorization': `Bearer ${token}`,
         'Accept': 'application/vnd.github.v3+json',

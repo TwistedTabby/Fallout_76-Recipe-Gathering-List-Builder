@@ -18,6 +18,16 @@ export async function onRequestGet(context) {
   const tokenData = await tokenResponse.json();
   const accessToken = tokenData.access_token;
 
+  // Get user information
+  const userResponse = await fetch('https://api.github.com/user', {
+    headers: {
+      'Authorization': `Bearer ${accessToken}`,
+      'Accept': 'application/vnd.github.v3+json',
+    },
+  });
+  
+  const user = await userResponse.json();
+
   // Check if user is a collaborator
   const collaboratorResponse = await fetch(
     'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators', {

@@ -6,6 +6,7 @@ export default function ImportRecipe() {
   const [jsonInput, setJsonInput] = useState('');
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     checkAuthStatus();
@@ -13,11 +14,15 @@ export default function ImportRecipe() {
 
   const checkAuthStatus = async () => {
     try {
+      console.log('Checking auth status...');
       const response = await fetch('/api/auth/check');
+      console.log('Auth response:', response);
       const data = await response.json();
+      console.log('Auth data:', data);
       setIsAuthenticated(data.isAuthenticated);
     } catch (error) {
       console.error('Auth check failed:', error);
+      setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);
     }
@@ -38,6 +43,16 @@ export default function ImportRecipe() {
       // TODO: Add error handling
     }
   };
+
+  if (error) {
+    return <Layout title={strings.importRecipe.title}>
+      <div className="container mx-auto px-4 py-8">
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
+          Error: {error}
+        </div>
+      </div>
+    </Layout>;
+  }
 
   if (isLoading) {
     return <Layout title={strings.importRecipe.title}>

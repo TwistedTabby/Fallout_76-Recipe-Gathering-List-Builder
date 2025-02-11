@@ -22,7 +22,7 @@ export const Layout = ({ title, children }: LayoutProps) => {
           </div> 
           <div className="flex-1 px-2 mx-2">
             <Link to="/" className="text-xl font-bold">
-              {strings.appTitle}
+              {title || strings.appTitle}
             </Link>
           </div>
           <div className="flex-none hidden lg:block">

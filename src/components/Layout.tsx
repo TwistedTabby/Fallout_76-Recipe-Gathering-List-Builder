@@ -1,7 +1,12 @@
 import { Link, Outlet } from 'react-router-dom';
 import { strings } from '../constants/strings';
 
-export const Layout = () => {
+interface LayoutProps {
+  title?: string;
+  children?: React.ReactNode;
+}
+
+export const Layout = ({ title, children }: LayoutProps) => {
   return (
     <div className="drawer">
       <input id="my-drawer-3" type="checkbox" className="drawer-toggle" /> 
@@ -30,7 +35,7 @@ export const Layout = () => {
         </div>
         {/* Page content */}
         <main className="flex-1">
-          <Outlet />
+          {children || <Outlet />}
         </main>
       </div> 
       {/* Sidebar for mobile */}

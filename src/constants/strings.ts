@@ -1,5 +1,5 @@
 export const strings = {
-  appTitle: 'FO76 Gathering List',
+  appTitle: 'Fallout 76 Gathering List',
   general: {
     home: 'Home',
   },

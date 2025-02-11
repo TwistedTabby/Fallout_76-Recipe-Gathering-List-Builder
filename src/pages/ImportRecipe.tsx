@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { strings } from '../constants/strings';
 import { Layout } from '../components/Layout';
-import { config } from '../config';
 
 export default function ImportRecipe() {
   const [jsonInput, setJsonInput] = useState('');

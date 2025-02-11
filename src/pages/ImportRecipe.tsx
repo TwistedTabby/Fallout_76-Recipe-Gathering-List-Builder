@@ -30,6 +30,11 @@ export default function ImportRecipe() {
   };
 
   const handleGitHubLogin = () => {
+    // Debug logging
+    console.log('Environment variables:', {
+      GITHUB_CLIENT_ID: config.GITHUB_CLIENT_ID,
+    });
+
     // Get the full URL including any query parameters
     const currentUrl = window.location.href;
     // Create state object with return URL
@@ -39,7 +44,14 @@ export default function ImportRecipe() {
     // Encode the state for URL safety
     const encodedState = btoa(state);
     
+    if (!config.GITHUB_CLIENT_ID) {
+      console.error('GitHub Client ID is not configured');
+      setError('GitHub OAuth is not properly configured');
+      return;
+    }
+    
     const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.GITHUB_CLIENT_ID}&scope=read:org&state=${encodedState}`;
+    console.log('GitHub Auth URL:', githubAuthUrl);
     window.location.href = githubAuthUrl;
   };
 

@@ -12,6 +12,8 @@ export default function ImportRecipe() {
     checkAuthStatus();
   }, []);
 
+  // @TODO: Put this in a hook
+  // @TODO: Use a service provider for the auth check (Clerk, Auth0, etc.)
   const checkAuthStatus = async () => {
     try {
       console.log('Starting auth status check...');

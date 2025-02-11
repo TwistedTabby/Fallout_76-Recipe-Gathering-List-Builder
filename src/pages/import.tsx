@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Layout } from '../components/Layout';
+import { strings } from '../constants/strings';
 
 export default function ImportRecipe() {
   const [jsonInput, setJsonInput] = useState('');
@@ -18,7 +19,7 @@ export default function ImportRecipe() {
 
   const content = (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold mb-6">Import Recipe</h1>
+      <h1 className="text-3xl font-bold mb-6">{strings.importRecipe.title}</h1>
       
       <form onSubmit={handleSubmit}>
         <div className="mb-4">
@@ -26,14 +27,14 @@ export default function ImportRecipe() {
             htmlFor="jsonInput" 
             className="block text-gray-700 text-sm font-bold mb-2"
           >
-            Paste Recipe JSON
+            {strings.importRecipe.pasteRecipeJSON}
           </label>
           <textarea
             id="jsonInput"
             value={jsonInput}
             onChange={(e) => setJsonInput(e.target.value)}
             className="w-full h-64 p-4 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            placeholder="Paste your recipe JSON here..."
+            placeholder={strings.importRecipe.pasteRecipeJSON}
           />
         </div>
         
@@ -41,11 +42,11 @@ export default function ImportRecipe() {
           type="submit"
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition-colors"
         >
-          Import Recipe
+          {strings.importRecipe.import}
         </button>
       </form>
     </div>
   );
 
-  return <Layout title="Import Recipe">{content}</Layout>;
+  return <Layout title={strings.importRecipe.title}>{content}</Layout>;
 } 

@@ -95,51 +95,76 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
       }
     );
 
-    // Add logging for collaborator response
     console.log('Collaborator response status:', collaboratorResponse.status);
-    const collaboratorText = await collaboratorResponse.text();
-    console.log('Collaborator response text:', collaboratorText);
 
-    let permissionData;
-    try {
-      permissionData = JSON.parse(collaboratorText);
-    } catch (parseError) {
-      console.error('Failed to parse collaborator response:', parseError);
-      return new Response(`Failed to parse collaborator response: ${collaboratorText.slice(0, 100)}...`, {
-        status: 500
-      });
-    }
-
-    const permission = permissionData.permission;
-    
-    // Add logging for permission data
-    console.log('Permission data:', permission);
-
-    // Check if user has sufficient permissions (write access or higher)
-    const hasAccess = ['admin', 'maintain', 'write'].includes(permission);
-
-    if (!hasAccess) {
+    // Handle different response status codes
+    if (collaboratorResponse.status === 404) {
       return new Response('Not authorized - must be a project collaborator with write access or higher', { 
         status: 403 
       });
     }
 
-    // Create a session token
-    const sessionToken = btoa(JSON.stringify({
-      user: userData.login,
-      avatar: userData.avatar_url,
-      exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-      isCollaborator: true,
-      permission: permission // Optionally store the permission level
-    }));
+    // Both 200 and 204 indicate the user is a collaborator
+    if (collaboratorResponse.status === 200 || collaboratorResponse.status === 204) {
+      // Get the user's permissions through a separate API call
+      const permissionsResponse = await fetch(
+        `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}/permission`,
+        {
+          headers: {
+            'Authorization': `Bearer ${context.env.GITHUB_COLLAB_ACCESS_TOKEN}`,
+            'Accept': 'application/json',
+            'User-Agent': USER_AGENT,
+            'X-GitHub-Api-Version': '2022-11-28'
+          },
+        }
+      );
 
-    // Redirect back to the frontend with the session token
-    return new Response(null, {
-      status: 302,
-      headers: {
-        'Location': '/',
-        'Set-Cookie': `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict`,
-      },
+      if (!permissionsResponse.ok) {
+        const permissionsErrorText = await permissionsResponse.text();
+        console.error('Permissions check failed:', permissionsErrorText);
+        return new Response(`Failed to check permissions: ${permissionsResponse.status} ${permissionsErrorText}`, {
+          status: 500
+        });
+      }
+
+      const permissionData = await permissionsResponse.json();
+      const permission = permissionData.permission;
+      
+      console.log('Permission data:', permission);
+
+      // Check if user has sufficient permissions (write access or higher)
+      const hasAccess = ['admin', 'maintain', 'write'].includes(permission);
+
+      if (!hasAccess) {
+        return new Response('Not authorized - must be a project collaborator with write access or higher', { 
+          status: 403 
+        });
+      }
+
+      // Create a session token
+      const sessionToken = btoa(JSON.stringify({
+        user: userData.login,
+        avatar: userData.avatar_url,
+        exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+        isCollaborator: true,
+        permission: permission
+      }));
+
+      // Redirect back to the frontend with the session token
+      return new Response(null, {
+        status: 302,
+        headers: {
+          'Location': '/',
+          'Set-Cookie': `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict`,
+        },
+      });
+    }
+
+    // If we get here, something unexpected happened
+    const errorText = await collaboratorResponse.text();
+    console.error('Unexpected collaborator response:', errorText);
+    return new Response(`Unexpected response checking collaborator status: ${collaboratorResponse.status}`, {
+      status: 500
     });
 
   } catch (error) {

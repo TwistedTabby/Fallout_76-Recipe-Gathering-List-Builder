@@ -1,59 +1,97 @@
-export async function onRequestGet(context) {
-  const { code } = context.request.query;
-  
-  // Exchange code for access token
-  const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
-    method: 'POST',
-    headers: {
-      'Accept': 'application/json',
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      client_id: context.env.GITHUB_CLIENT_ID,
-      client_secret: context.env.GITHUB_CLIENT_SECRET,
-      code,
-    }),
-  });
+import type { PagesFunction } from '@cloudflare/workers-types';
 
-  const tokenData = await tokenResponse.json();
-  const accessToken = tokenData.access_token;
+interface Env {
+  GITHUB_CLIENT_ID: string;
+  GITHUB_CLIENT_SECRET: string;
+  JWT_SECRET: string;
+}
 
-  // Get user information
-  const userResponse = await fetch('https://api.github.com/user', {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'application/vnd.github.v3+json',
-    },
-  });
-  
-  const user = await userResponse.json();
+export const onRequestGet: PagesFunction<Env> = async (context) => {
+  try {
+    // Get the code from the URL search params instead of context.request.query
+    const url = new URL(context.request.url);
+    const code = url.searchParams.get('code');
 
-  // Check if user is a collaborator
-  const collaboratorResponse = await fetch(
-    'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators', {
-    headers: {
-      'Authorization': `Bearer ${accessToken}`,
-      'Accept': 'application/vnd.github.v3+json',
-    },
-  });
+    if (!code) {
+      return new Response('No code provided', { status: 400 });
+    }
 
-  const collaborators = await collaboratorResponse.json();
-  const isCollaborator = collaborators.some(
-    collaborator => collaborator.login === user.login
-  );
+    // Exchange the code for an access token
+    const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Accept': 'application/json',
+      },
+      body: JSON.stringify({
+        client_id: context.env.GITHUB_CLIENT_ID,
+        client_secret: context.env.GITHUB_CLIENT_SECRET,
+        code: code,
+      }),
+    });
 
-  if (!isCollaborator) {
-    return Response.redirect(`${context.env.BASE_URL}/import?error=not_collaborator`, 302);
+    const tokenData = await tokenResponse.json();
+
+    if (tokenData.error) {
+      return new Response(`GitHub OAuth error: ${tokenData.error}`, { 
+        status: 400 
+      });
+    }
+
+    // Get user data from GitHub
+    const userResponse = await fetch('https://api.github.com/user', {
+      headers: {
+        'Authorization': `Bearer ${tokenData.access_token}`,
+        'Accept': 'application/json',
+      },
+    });
+
+    const userData = await userResponse.json();
+
+    // Check if user is a collaborator
+    const collaboratorResponse = await fetch(
+      'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators',
+      {
+        headers: {
+          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Accept': 'application/json',
+        },
+      }
+    );
+
+    const collaborators = await collaboratorResponse.json();
+    const isCollaborator = collaborators.some(
+      (collaborator: { login: string }) => collaborator.login === userData.login
+    );
+
+    if (!isCollaborator) {
+      return new Response('Not authorized - must be a project collaborator', { 
+        status: 403 
+      });
+    }
+
+    // Create a session token
+    // Note: In a production environment, you should use a proper JWT library
+    const sessionToken = btoa(JSON.stringify({
+      user: userData.login,
+      avatar: userData.avatar_url,
+      exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
+      isCollaborator: true
+    }));
+
+    // Redirect back to the frontend with the session token
+    return new Response(null, {
+      status: 302,
+      headers: {
+        'Location': '/',
+        'Set-Cookie': `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict`,
+      },
+    });
+
+  } catch (error) {
+    console.error('Auth callback error:', error);
+    return new Response(`Authentication error: ${error instanceof Error ? error.message : 'Unknown error'}`, { 
+      status: 500 
+    });
   }
-
-  // Set session cookie
-  const headers = new Headers({
-    'Set-Cookie': `github_token=${accessToken}; Path=/; HttpOnly; Secure; SameSite=Lax`,
-    'Location': `${context.env.BASE_URL}/import`,
-  });
-
-  return new Response(null, {
-    status: 302,
-    headers,
-  });
-} 
+}; 

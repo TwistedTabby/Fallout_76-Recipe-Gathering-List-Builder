@@ -78,9 +78,9 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     const userData = await userResponse.json();
 
-    // Check if user is a collaborator
+    // Check if user is a collaborator using the specific user check endpoint
     const collaboratorResponse = await fetch(
-      'https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators?affiliation=all&per_page=100',
+      `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}/permission`,
       {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
@@ -91,6 +91,12 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       }
     );
 
+    if (collaboratorResponse.status === 404) {
+      return new Response('Not authorized - must be a project collaborator with write access or higher', { 
+        status: 403 
+      });
+    }
+
     if (!collaboratorResponse.ok) {
       const collabErrorText = await collaboratorResponse.text();
       console.error('Collaborator check failed:', collabErrorText);
@@ -99,29 +105,13 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       });
     }
 
-    const collaborators = await collaboratorResponse.json();
+    const permissionData = await collaboratorResponse.json();
+    const permission = permissionData.permission;
     
-    // Check if user is in the list of collaborators
-    const isCollaborator = collaborators.some((collaborator: { 
-      login: string,
-      permissions?: {
-        admin?: boolean,
-        maintain?: boolean,
-        push?: boolean,
-        triage?: boolean,
-        pull?: boolean
-      }
-    }) => {
-      // Check if it's the same user
-      const isUser = collaborator.login === userData.login;
-      // Check if they have write access or higher
-      const hasAccess = collaborator.permissions?.admin || 
-                       collaborator.permissions?.maintain || 
-                       collaborator.permissions?.push;
-      return isUser && hasAccess;
-    });
+    // Check if user has sufficient permissions (write access or higher)
+    const hasAccess = ['admin', 'maintain', 'write'].includes(permission);
 
-    if (!isCollaborator) {
+    if (!hasAccess) {
       return new Response('Not authorized - must be a project collaborator with write access or higher', { 
         status: 403 
       });
@@ -132,7 +122,8 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       user: userData.login,
       avatar: userData.avatar_url,
       exp: Date.now() + (24 * 60 * 60 * 1000), // 24 hours
-      isCollaborator: true
+      isCollaborator: true,
+      permission: permission // Optionally store the permission level
     }));
 
     // Redirect back to the frontend with the session token

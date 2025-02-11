@@ -4,11 +4,12 @@ interface Env {
   GITHUB_CLIENT_ID: string;
   GITHUB_CLIENT_SECRET: string;
   JWT_SECRET: string;
+  GITHUB_COLLAB_ACCESS_TOKEN: string;
 }
 
 const USER_AGENT = 'FO76-Recipe-Builder/1.0.0 (+https://fo76-gather.twistedtabby.com)';
 
-export const onRequestGet: PagesFunction<Env> = async (context) => {
+export const onRequestGet = async (context: EventContext<Env, any, Record<string, unknown>>): Promise<Response> => {
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get('code');
@@ -80,10 +81,10 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
 
     // Check if user is a collaborator using the specific user check endpoint
     const collaboratorResponse = await fetch(
-      `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}/permission`,
+      `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}`,
       {
         headers: {
-          'Authorization': `Bearer ${tokenData.access_token}`,
+          'Authorization': `Bearer ${context.env.GITHUB_COLLAB_ACCESS_TOKEN}`,
           'Accept': 'application/json',
           'User-Agent': USER_AGENT,
           'X-GitHub-Api-Version': '2022-11-28'

@@ -21,6 +21,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       headers: {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
+        'User-Agent': 'FO76-Recipe-Builder',
       },
       body: JSON.stringify({
         client_id: context.env.GITHUB_CLIENT_ID,
@@ -61,6 +62,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       headers: {
         'Authorization': `Bearer ${tokenData.access_token}`,
         'Accept': 'application/json',
+        'User-Agent': 'FO76-Recipe-Builder',
       },
     });
 
@@ -81,6 +83,7 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         headers: {
           'Authorization': `Bearer ${tokenData.access_token}`,
           'Accept': 'application/json',
+          'User-Agent': 'FO76-Recipe-Builder',
         },
       }
     );

@@ -8,7 +8,6 @@ interface Env {
 
 export const onRequestGet: PagesFunction<Env> = async (context) => {
   try {
-    // Get the code from the URL search params instead of context.request.query
     const url = new URL(context.request.url);
     const code = url.searchParams.get('code');
 
@@ -30,11 +29,30 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       }),
     });
 
-    const tokenData = await tokenResponse.json();
+    // Debug logging
+    console.log('Token response status:', tokenResponse.status);
+    const responseText = await tokenResponse.text();
+    console.log('Token response text:', responseText);
+
+    let tokenData;
+    try {
+      tokenData = JSON.parse(responseText);
+    } catch (parseError) {
+      console.error('Failed to parse token response:', parseError);
+      return new Response(`Failed to parse GitHub response: ${responseText.slice(0, 100)}...`, {
+        status: 500
+      });
+    }
 
     if (tokenData.error) {
       return new Response(`GitHub OAuth error: ${tokenData.error}`, { 
         status: 400 
+      });
+    }
+
+    if (!tokenData.access_token) {
+      return new Response(`Invalid GitHub response - no access token received: ${JSON.stringify(tokenData)}`, {
+        status: 400
       });
     }
 
@@ -45,6 +63,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
         'Accept': 'application/json',
       },
     });
+
+    if (!userResponse.ok) {
+      const userErrorText = await userResponse.text();
+      console.error('User data fetch failed:', userErrorText);
+      return new Response(`Failed to fetch user data: ${userResponse.status} ${userErrorText}`, {
+        status: 500
+      });
+    }
 
     const userData = await userResponse.json();
 
@@ -59,6 +85,14 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
       }
     );
 
+    if (!collaboratorResponse.ok) {
+      const collabErrorText = await collaboratorResponse.text();
+      console.error('Collaborator check failed:', collabErrorText);
+      return new Response(`Failed to check collaborator status: ${collaboratorResponse.status} ${collabErrorText}`, {
+        status: 500
+      });
+    }
+
     const collaborators = await collaboratorResponse.json();
     const isCollaborator = collaborators.some(
       (collaborator: { login: string }) => collaborator.login === userData.login
@@ -71,7 +105,6 @@ export const onRequestGet: PagesFunction<Env> = async (context) => {
     }
 
     // Create a session token
-    // Note: In a production environment, you should use a proper JWT library
     const sessionToken = btoa(JSON.stringify({
       user: userData.login,
       avatar: userData.avatar_url,

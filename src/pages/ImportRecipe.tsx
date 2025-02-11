@@ -14,14 +14,23 @@ export default function ImportRecipe() {
 
   const checkAuthStatus = async () => {
     try {
-      console.log('Checking auth status...');
+      console.log('Starting auth status check...');
       const response = await fetch('/api/auth/check');
-      console.log('Auth response:', response);
+      console.log('Auth check response status:', response.status);
+      
+      if (!response.ok) {
+        console.error('Auth check failed:', response.status);
+        throw new Error(`Auth check failed: ${response.status}`);
+      }
+      
       const data = await response.json();
-      console.log('Auth data:', data);
+      console.log('Auth check data:', data);
+      
       setIsAuthenticated(data.isAuthenticated);
+      console.log('Set authenticated state to:', data.isAuthenticated);
+      
     } catch (error) {
-      console.error('Auth check failed:', error);
+      console.error('Auth check error:', error);
       setError(error instanceof Error ? error.message : 'Unknown error');
     } finally {
       setIsLoading(false);

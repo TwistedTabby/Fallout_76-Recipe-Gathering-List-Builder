@@ -30,8 +30,16 @@ export default function ImportRecipe() {
   };
 
   const handleGitHubLogin = () => {
-    const currentPath = window.location.pathname;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.GITHUB_CLIENT_ID}&scope=read:org&state=${encodeURIComponent(currentPath)}`;
+    // Get the full URL including any query parameters
+    const currentUrl = window.location.href;
+    // Create state object with return URL
+    const state = JSON.stringify({
+      returnTo: currentUrl
+    });
+    // Encode the state for URL safety
+    const encodedState = btoa(state);
+    
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.GITHUB_CLIENT_ID}&scope=read:org&state=${encodedState}`;
     window.location.href = githubAuthUrl;
   };
 

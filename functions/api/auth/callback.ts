@@ -13,8 +13,21 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get('code');
-    // Get the redirect URI from the state parameter or default to '/'
-    const redirectUri = url.searchParams.get('state') || '/';
+    const encodedState = url.searchParams.get('state');
+    
+    // Default to home if no state is provided
+    let redirectUri = '/';
+    
+    if (encodedState) {
+      try {
+        const stateJson = atob(encodedState);
+        const state = JSON.parse(stateJson);
+        redirectUri = state.returnTo || '/';
+      } catch (error) {
+        console.error('Failed to parse state:', error);
+        // Fall back to default redirect if state parsing fails
+      }
+    }
 
     if (!code) {
       return new Response('No code provided', { status: 400 });

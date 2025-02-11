@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { strings } from '../constants/strings';
 import { Layout } from '../components/Layout';
+import { config } from '../config';
 
 export default function ImportRecipe() {
   const [jsonInput, setJsonInput] = useState('');
@@ -30,7 +31,7 @@ export default function ImportRecipe() {
 
   const handleGitHubLogin = () => {
     const currentPath = window.location.pathname;
-    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:org&state=${encodeURIComponent(currentPath)}`;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${config.GITHUB_CLIENT_ID}&scope=read:org&state=${encodeURIComponent(currentPath)}`;
     window.location.href = githubAuthUrl;
   };
 

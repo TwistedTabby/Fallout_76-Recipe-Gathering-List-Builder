@@ -6,6 +6,15 @@ interface LayoutProps {
   children?: React.ReactNode;
 }
 
+const MenuItems = () => (
+  <>
+    <li><Link to="/">{strings.general.home}</Link></li>
+    <li><Link to="/recipes">{strings.recipes.title}</Link></li>
+    <li><Link to="/gathering-list">{strings.gatheringList.title}</Link></li>
+    <li><Link to="/import">{strings.importRecipe.title}</Link></li>
+  </>
+);
+
 export const Layout = ({ title, children }: LayoutProps) => {
   return (
     <div className="drawer">
@@ -27,9 +36,7 @@ export const Layout = ({ title, children }: LayoutProps) => {
           </div>
           <div className="flex-none hidden lg:block">
             <ul className="menu menu-horizontal">
-              <li><Link to="/">{strings.general.home}</Link></li>
-              <li><Link to="/recipes">{strings.recipes.title}</Link></li>
-              <li><Link to="/gathering-list">{strings.gatheringList.title}</Link></li>
+              <MenuItems />
             </ul>
           </div>
         </div>
@@ -42,10 +49,7 @@ export const Layout = ({ title, children }: LayoutProps) => {
       <div className="drawer-side">
         <label htmlFor="my-drawer-3" className="drawer-overlay"></label> 
         <ul className="menu p-4 w-80 h-full bg-base-200">
-          <li><Link to="/">{strings.general.home}</Link></li>
-          <li><Link to="/recipes">{strings.recipes.title}</Link></li>
-          <li><Link to="/gathering-list">{strings.gatheringList.title}</Link></li>
-          <li><Link to="/import">{strings.importRecipe.title}</Link></li>
+          <MenuItems />
         </ul>
       </div>
     </div>

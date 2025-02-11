@@ -13,6 +13,8 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get('code');
+    // Get the redirect URI from the state parameter or default to '/'
+    const redirectUri = url.searchParams.get('state') || '/';
 
     if (!code) {
       return new Response('No code provided', { status: 400 });
@@ -150,11 +152,11 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
         permission: permission
       }));
 
-      // Redirect back to the frontend with the session token
+      // Update the redirect location to use the stored redirect URI
       return new Response(null, {
         status: 302,
         headers: {
-          'Location': '/',
+          'Location': redirectUri,
           'Set-Cookie': `session=${sessionToken}; Path=/; HttpOnly; Secure; SameSite=Strict`,
         },
       });

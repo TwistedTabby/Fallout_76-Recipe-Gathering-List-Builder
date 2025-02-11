@@ -29,7 +29,9 @@ export default function ImportRecipe() {
   };
 
   const handleGitHubLogin = () => {
-    window.location.href = '/api/auth/github';
+    const currentPath = window.location.pathname;
+    const githubAuthUrl = `https://github.com/login/oauth/authorize?client_id=${GITHUB_CLIENT_ID}&scope=read:org&state=${encodeURIComponent(currentPath)}`;
+    window.location.href = githubAuthUrl;
   };
 
   const handleSubmit = (e: React.FormEvent) => {

@@ -29,6 +29,7 @@ const NavLinks = () => (
 
 export function Layout({ children, title }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const pageTitle = title || strings.appTitle;
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -36,8 +37,8 @@ export function Layout({ children, title }: LayoutProps) {
         <div className="container mx-auto px-4">
           <div className="flex justify-between h-16">
             <div className="flex">
-              <Link to="/" className="flex-shrink-0 flex items-center">
-                {strings.appTitle}
+              <Link to="/" className="flex-shrink-0 flex items-center font-bold">
+                {pageTitle}
               </Link>
               {/* Desktop Navigation */}
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -49,6 +50,8 @@ export function Layout({ children, title }: LayoutProps) {
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
                 className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100"
+                aria-expanded={isMobileMenuOpen}
+                aria-label="Toggle navigation menu"
               >
                 <span className="sr-only">Open main menu</span>
                 <svg 

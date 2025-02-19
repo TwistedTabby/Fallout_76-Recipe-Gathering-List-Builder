@@ -1,17 +1,18 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Layout } from './components/Layout';
-import { HomePage } from './pages/HomePage';
+import HomePage from './pages/HomePage';
 import ImportRecipe from './pages/ImportRecipe';
+import CharismaPriceCalc from './pages/CharismaPriceCalc';
 
 function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<HomePage />} />
-          {/* Other routes will be added here */}
+        <Route element={<Layout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/import" element={<ImportRecipe />} />
+          <Route path="/charisma-price-calc" element={<CharismaPriceCalc />} />
         </Route>
-        <Route path="/import" element={<ImportRecipe />} />
       </Routes>
     </Router>
   );

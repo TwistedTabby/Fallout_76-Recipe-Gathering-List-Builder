@@ -61,5 +61,9 @@ export const strings = {
     invalidJSON: 'Invalid JSON',
     error: 'Error',
     success: 'Recipe imported successfully'
-  }
+  },
+  charismaPriceCalc: {
+    title: 'Charisma to Price Calculator',
+    shortTitle: 'CHR Price Calc', // For navigation
+  },
 }; 

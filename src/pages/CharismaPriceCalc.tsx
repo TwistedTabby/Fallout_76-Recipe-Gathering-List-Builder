@@ -108,6 +108,8 @@ export default function CharismaPriceCalc() {
   const [charisma, setCharisma] = useState<string>('5');
   const [vendorPrice, setVendorPrice] = useState<string>('50');
   const [errors, setErrors] = useState({ charisma: '', vendorPrice: '' });
+  const [announcement, setAnnouncement] = useState('');
+  
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
   const tableRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +117,13 @@ export default function CharismaPriceCalc() {
   const userLocale = typeof navigator !== 'undefined' 
     ? navigator.language || navigator.languages[0] || 'en-US'
     : 'en-US';
+
+  // Add unique IDs for form controls
+  const charismaInputId = "charisma-input";
+  const charismaErrorId = "charisma-error";
+  const vendorPriceInputId = "vendor-price-input";
+  const vendorPriceErrorId = "vendor-price-error";
+  const vendorPriceDescId = "vendor-price-desc";
 
   useEffect(() => {
     if (highlightedRowRef.current && typeof charisma === 'number' && typeof vendorPrice === 'number') {
@@ -197,51 +206,217 @@ export default function CharismaPriceCalc() {
 
   const priceTable = vendorPrice ? calculatePrices(vendorPrice) : [];
 
+  const handleTableKeyDown = (e: React.KeyboardEvent<HTMLTableElement>) => {
+    const currentCharisma = Number(charisma);
+    const rows = priceTable.map(entry => entry.charisma);
+    const currentIndex = rows.indexOf(currentCharisma);
+    const totalRows = rows.length;
+    
+    switch (e.key) {
+      case 'ArrowUp':
+        e.preventDefault();
+        if (currentIndex > 0) {
+          const newCharisma = rows[currentIndex - 1];
+          setCharisma(newCharisma.toString());
+          announceRowChange(newCharisma, currentIndex - 1, totalRows);
+        } else {
+          setAnnouncement('At first row');
+        }
+        break;
+      case 'ArrowDown':
+        e.preventDefault();
+        if (currentIndex < rows.length - 1) {
+          const newCharisma = rows[currentIndex + 1];
+          setCharisma(newCharisma.toString());
+          announceRowChange(newCharisma, currentIndex + 1, totalRows);
+        } else {
+          setAnnouncement('At last row');
+        }
+        break;
+      case 'Home':
+        e.preventDefault();
+        const firstCharisma = rows[0];
+        setCharisma(firstCharisma.toString());
+        announceRowChange(firstCharisma, 0, totalRows);
+        break;
+      case 'End':
+        e.preventDefault();
+        const lastCharisma = rows[rows.length - 1];
+        setCharisma(lastCharisma.toString());
+        announceRowChange(lastCharisma, rows.length - 1, totalRows);
+        break;
+      case 'PageUp':
+        e.preventDefault();
+        const pageUpIndex = Math.max(0, currentIndex - 10);
+        const pageUpCharisma = rows[pageUpIndex];
+        setCharisma(pageUpCharisma.toString());
+        announceRowChange(pageUpCharisma, pageUpIndex, totalRows);
+        break;
+      case 'PageDown':
+        e.preventDefault();
+        const pageDownIndex = Math.min(rows.length - 1, currentIndex + 10);
+        const pageDownCharisma = rows[pageDownIndex];
+        setCharisma(pageDownCharisma.toString());
+        announceRowChange(pageDownCharisma, pageDownIndex, totalRows);
+        break;
+    }
+  };
+
+  const announceRowChange = (charismaValue: number, index: number, total: number) => {
+    const entry = priceTable.find(e => e.charisma === charismaValue);
+    if (entry) {
+      setAnnouncement(
+        `Row ${index + 1} of ${total}. Charisma ${entry.charisma}, Buy Price ${entry.buyPrice}`
+      );
+    }
+  };
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setAnnouncement('');
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, [announcement]);
+
+  useEffect(() => {
+    if (!errors.vendorPrice && vendorPrice) {
+      const currentEntry = priceTable.find(e => e.charisma === Number(charisma));
+      if (currentEntry) {
+        setAnnouncement(`Updated prices. Current row: Charisma ${currentEntry.charisma}, Buy Price ${currentEntry.buyPrice}`);
+      }
+    }
+  }, [vendorPrice, priceTable]);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-4 py-8">
+      {/* Skip link */}
+      <a 
+        href="#price-table"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-white focus:border focus:border-indigo-500"
+      >
+        Skip to price table
+      </a>
+
+      {/* Live region */}
+      <div 
+        aria-live="polite" 
+        aria-atomic="true" 
+        className="sr-only"
+      >
+        {announcement}
+      </div>
+
       <h1 className="text-3xl font-bold mb-6">{strings.charismaPriceCalc.title}</h1>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-900">Charisma Stat</label>
-        <input
-          type="number"
-          value={charisma}
-          onChange={handleCharismaChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        />
-        {errors.charisma && (
-          <p className="mt-1 text-sm text-red-700" role="alert">{errors.charisma}</p>
-        )}
-      </div>
-      <div className="mb-4">
-        <label className="block text-sm font-medium text-gray-900">Vendor Price</label>
-        <input
-          type="number"
-          value={vendorPrice}
-          onChange={handleVendorPriceChange}
-          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-        />
-        {errors.vendorPrice && (
-          <p className="mt-1 text-sm text-red-700" role="alert">{errors.vendorPrice}</p>
-        )}
-        {typeof vendorPrice === 'number' && !errors.vendorPrice && (
-          <p className="mt-1 text-sm text-gray-700">Formatted: {formatNumber(Number(vendorPrice))}</p>
-        )}
-      </div>
-      <div className="mb-4">
-        <div className="max-h-96 overflow-y-auto" ref={tableRef}>
-          <table className="min-w-full divide-y divide-gray-200">
+      
+      {/* Form section */}
+      <section aria-labelledby="form-heading">
+        <h2 id="form-heading" className="sr-only">Price Calculator Inputs</h2>
+        
+        <div className="space-y-4">
+          <div className="mb-4">
+            <label htmlFor={charismaInputId} className="block text-sm font-medium text-gray-900">
+              Charisma Stat
+            </label>
+            <input
+              id={charismaInputId}
+              type="number"
+              value={charisma}
+              onChange={handleCharismaChange}
+              aria-invalid={!!errors.charisma}
+              aria-describedby={errors.charisma ? charismaErrorId : undefined}
+              aria-label={`Enter charisma value between ${formatNumber(1)} and ${formatNumber(100)}`}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+            {errors.charisma && (
+              <p 
+                id={charismaErrorId}
+                className="mt-1 text-sm text-red-700" 
+                role="alert"
+              >
+                {errors.charisma}
+              </p>
+            )}
+          </div>
+
+          <div className="mb-4">
+            <label htmlFor={vendorPriceInputId} className="block text-sm font-medium text-gray-900">
+              Vendor Price
+            </label>
+            <input
+              id={vendorPriceInputId}
+              type="number"
+              value={vendorPrice}
+              onChange={handleVendorPriceChange}
+              aria-invalid={!!errors.vendorPrice}
+              aria-describedby={`${errors.vendorPrice ? vendorPriceErrorId : ''} ${vendorPriceDescId}`}
+              aria-label={`Enter vendor price between ${formatNumber(1)} and ${formatNumber(40000)}`}
+              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+            />
+            {errors.vendorPrice && (
+              <p 
+                id={vendorPriceErrorId}
+                className="mt-1 text-sm text-red-700" 
+                role="alert"
+              >
+                {errors.vendorPrice}
+              </p>
+            )}
+            {typeof vendorPrice === 'number' && !errors.vendorPrice && (
+              <p 
+                id={vendorPriceDescId}
+                className="mt-1 text-sm text-gray-700"
+              >
+                Formatted: {formatNumber(Number(vendorPrice))}
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* Results section */}
+      <section 
+        aria-labelledby="results-heading"
+        className="mb-4"
+        id="price-table"
+      >
+        <h2 id="results-heading" className="sr-only">Price Table Results</h2>
+        
+        <div 
+          className="max-h-96 overflow-y-auto" 
+          ref={tableRef}
+          role="region" 
+          aria-label="Scrollable price table"
+        >
+          <table 
+            className="min-w-full divide-y divide-gray-200"
+            onKeyDown={handleTableKeyDown}
+            role="grid"
+            aria-rowcount={priceTable.length}
+            aria-label="Price table showing buy prices for different charisma values"
+          >
+            <caption className="sr-only">
+              Price table showing buy prices for different charisma values. 
+              Use up and down arrow keys to navigate, Home and End to jump to start or end, 
+              PageUp and PageDown to move by 10 rows.
+            </caption>
             <thead className="sticky top-0">
               <tr>
-                <th className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                <th 
+                  scope="col"
+                  className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider"
+                >
                   Charisma
                 </th>
-                <th className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                <th 
+                  scope="col"
+                  className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider"
+                >
                   Buy Price
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {priceTable.map((entry) => (
+              {priceTable.map((entry, index) => (
                 <tr 
                   key={entry.charisma}
                   data-charisma={entry.charisma}
@@ -249,15 +424,35 @@ export default function CharismaPriceCalc() {
                   tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
                   role="row"
                   aria-selected={Number(charisma) === entry.charisma}
+                  aria-rowindex={index + 1}
+                  ref={Number(charisma) === entry.charisma ? highlightedRowRef : null}
                 >
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.charisma}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.buyPrice}</td>
+                  <td 
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    role="gridcell"
+                  >
+                    {entry.charisma}
+                  </td>
+                  <td 
+                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    role="gridcell"
+                  >
+                    {entry.buyPrice}
+                  </td>
                 </tr>
               ))}
             </tbody>
           </table>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* Back to top link - visible when scrolled */}
+      <a 
+        href="#top"
+        className="sr-only focus:not-sr-only focus:fixed focus:bottom-4 focus:right-4 focus:z-50 focus:p-2 focus:bg-white focus:border focus:border-indigo-500"
+      >
+        Back to top
+      </a>
+    </main>
   );
 }

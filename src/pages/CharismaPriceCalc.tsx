@@ -1,5 +1,4 @@
 import { useState, useRef, useEffect } from 'react';
-import { Layout } from '../components/Layout';
 import { strings } from '../constants/strings';
 
 const charismaTable = [
@@ -199,68 +198,66 @@ export default function CharismaPriceCalc() {
   const priceTable = vendorPrice ? calculatePrices(vendorPrice) : [];
 
   return (
-    <Layout title={strings.charismaPriceCalc.title}>
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold mb-6">{strings.charismaPriceCalc.title}</h1>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Charisma Stat</label>
-          <input
-            type="number"
-            value={charisma}
-            onChange={handleCharismaChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-          {errors.charisma && (
-            <p className="mt-1 text-sm text-red-600">{errors.charisma}</p>
-          )}
-        </div>
-        <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700">Vendor Price</label>
-          <input
-            type="number"
-            value={vendorPrice}
-            onChange={handleVendorPriceChange}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-          />
-          {errors.vendorPrice && (
-            <p className="mt-1 text-sm text-red-600">{errors.vendorPrice}</p>
-          )}
-          {typeof vendorPrice === 'number' && !errors.vendorPrice && (
-            <p className="mt-1 text-sm text-gray-500">Formatted: {formatNumber(Number(vendorPrice))}</p>
-          )}
-        </div>
-        <div className="mb-4">
-          <div className="max-h-96 overflow-y-auto" ref={tableRef}>
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="sticky top-0">
-                <tr>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Charisma
-                  </th>
-                  <th className="px-6 py-3 bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Buy Price
-                  </th>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold mb-6">{strings.charismaPriceCalc.title}</h1>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-900">Charisma Stat</label>
+        <input
+          type="number"
+          value={charisma}
+          onChange={handleCharismaChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
+        {errors.charisma && (
+          <p className="mt-1 text-sm text-red-700" role="alert">{errors.charisma}</p>
+        )}
+      </div>
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-900">Vendor Price</label>
+        <input
+          type="number"
+          value={vendorPrice}
+          onChange={handleVendorPriceChange}
+          className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+        />
+        {errors.vendorPrice && (
+          <p className="mt-1 text-sm text-red-700" role="alert">{errors.vendorPrice}</p>
+        )}
+        {typeof vendorPrice === 'number' && !errors.vendorPrice && (
+          <p className="mt-1 text-sm text-gray-700">Formatted: {formatNumber(Number(vendorPrice))}</p>
+        )}
+      </div>
+      <div className="mb-4">
+        <div className="max-h-96 overflow-y-auto" ref={tableRef}>
+          <table className="min-w-full divide-y divide-gray-200">
+            <thead className="sticky top-0">
+              <tr>
+                <th className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                  Charisma
+                </th>
+                <th className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider">
+                  Buy Price
+                </th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {priceTable.map((entry) => (
+                <tr 
+                  key={entry.charisma}
+                  data-charisma={entry.charisma}
+                  className={Number(charisma) === entry.charisma ? "bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" : ""}
+                  tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
+                  role="row"
+                  aria-selected={Number(charisma) === entry.charisma}
+                >
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.charisma}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.buyPrice}</td>
                 </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {priceTable.map((entry) => (
-                  <tr 
-                    key={entry.charisma}
-                    data-charisma={entry.charisma}
-                    className={Number(charisma) === entry.charisma ? "bg-indigo-50" : ""}
-                    tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
-                    role="row"
-                    aria-selected={Number(charisma) === entry.charisma}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.charisma}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.buyPrice}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
-    </Layout>
+    </div>
   );
 }

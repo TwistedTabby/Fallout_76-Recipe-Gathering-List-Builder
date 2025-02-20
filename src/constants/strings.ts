@@ -65,5 +65,8 @@ export const strings = {
   charismaPriceCalc: {
     title: 'Charisma to Price Calculator',
     shortTitle: 'CHR Price Calc', // For navigation
+    sourceCredits: 'Data sourced from The DuchessFlame',
+    sourceLink: 'https://www.theduchessflame.com/post/charisma-and-barter-prices-how-it-works-in-fallout-76',
+    sourceDate: 'Data updated on 2025-02-19'
   },
 }; 

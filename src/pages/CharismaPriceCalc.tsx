@@ -1,108 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { strings } from '../constants/strings';
-
-const charismaTable = [
-  { charisma: 1, buyModifier: 2.5, sellModifier: 0.1 },
-  { charisma: 2, buyModifier: 2.5, sellModifier: 0.1 },
-  { charisma: 3, buyModifier: 2.4, sellModifier: 0.125 },
-  { charisma: 4, buyModifier: 2.4, sellModifier: 0.125 },
-  { charisma: 5, buyModifier: 2.3, sellModifier: 0.15 },
-  { charisma: 6, buyModifier: 2.3, sellModifier: 0.15 },
-  { charisma: 7, buyModifier: 2.2, sellModifier: 0.175 },
-  { charisma: 8, buyModifier: 2.2, sellModifier: 0.175 },
-  { charisma: 9, buyModifier: 2.1, sellModifier: 0.2 },
-  { charisma: 10, buyModifier: 2.1, sellModifier: 0.2 },
-  { charisma: 11, buyModifier: 1.98, sellModifier: 0.205 },
-  { charisma: 12, buyModifier: 1.96, sellModifier: 0.21 },
-  { charisma: 13, buyModifier: 1.94, sellModifier: 0.215 },
-  { charisma: 14, buyModifier: 1.92, sellModifier: 0.22 },
-  { charisma: 15, buyModifier: 1.9, sellModifier: 0.225 },
-  { charisma: 16, buyModifier: 1.88, sellModifier: 0.23 },
-  { charisma: 17, buyModifier: 1.86, sellModifier: 0.235 },
-  { charisma: 18, buyModifier: 1.84, sellModifier: 0.24 },
-  { charisma: 19, buyModifier: 1.82, sellModifier: 0.245 },
-  { charisma: 20, buyModifier: 1.8, sellModifier: 0.25 },
-  { charisma: 21, buyModifier: 1.79, sellModifier: 0.255 },
-  { charisma: 22, buyModifier: 1.78, sellModifier: 0.26 },
-  { charisma: 23, buyModifier: 1.77, sellModifier: 0.265 },
-  { charisma: 24, buyModifier: 1.76, sellModifier: 0.27 },
-  { charisma: 25, buyModifier: 1.75, sellModifier: 0.275 },
-  { charisma: 26, buyModifier: 1.74, sellModifier: 0.28 },
-  { charisma: 27, buyModifier: 1.73, sellModifier: 0.285 },
-  { charisma: 28, buyModifier: 1.72, sellModifier: 0.29 },
-  { charisma: 29, buyModifier: 1.71, sellModifier: 0.295 },
-  { charisma: 30, buyModifier: 1.7, sellModifier: 0.3 },
-  { charisma: 31, buyModifier: 1.69, sellModifier: 0.305 },
-  { charisma: 32, buyModifier: 1.68, sellModifier: 0.31 },
-  { charisma: 33, buyModifier: 1.67, sellModifier: 0.315 },
-  { charisma: 34, buyModifier: 1.66, sellModifier: 0.32 },
-  { charisma: 35, buyModifier: 1.65, sellModifier: 0.325 },
-  { charisma: 36, buyModifier: 1.64, sellModifier: 0.33 },
-  { charisma: 37, buyModifier: 1.63, sellModifier: 0.335 },
-  { charisma: 38, buyModifier: 1.62, sellModifier: 0.34 },
-  { charisma: 39, buyModifier: 1.61, sellModifier: 0.345 },
-  { charisma: 40, buyModifier: 1.6, sellModifier: 0.35 },
-  { charisma: 41, buyModifier: 1.59, sellModifier: 0.355 },
-  { charisma: 42, buyModifier: 1.58, sellModifier: 0.36 },
-  { charisma: 43, buyModifier: 1.57, sellModifier: 0.365 },
-  { charisma: 44, buyModifier: 1.56, sellModifier: 0.37 },
-  { charisma: 45, buyModifier: 1.55, sellModifier: 0.375 },
-  { charisma: 46, buyModifier: 1.54, sellModifier: 0.38 },
-  { charisma: 47, buyModifier: 1.53, sellModifier: 0.385 },
-  { charisma: 48, buyModifier: 1.52, sellModifier: 0.39 },
-  { charisma: 49, buyModifier: 1.51, sellModifier: 0.395 },
-  { charisma: 50, buyModifier: 1.5, sellModifier: 0.4 },
-  { charisma: 51, buyModifier: 1.49, sellModifier: 0.405 },
-  { charisma: 52, buyModifier: 1.48, sellModifier: 0.41 },
-  { charisma: 53, buyModifier: 1.47, sellModifier: 0.415 },
-  { charisma: 54, buyModifier: 1.46, sellModifier: 0.42 },
-  { charisma: 55, buyModifier: 1.45, sellModifier: 0.425 },
-  { charisma: 56, buyModifier: 1.44, sellModifier: 0.43 },
-  { charisma: 57, buyModifier: 1.43, sellModifier: 0.435 },
-  { charisma: 58, buyModifier: 1.42, sellModifier: 0.44 },
-  { charisma: 59, buyModifier: 1.41, sellModifier: 0.445 },
-  { charisma: 60, buyModifier: 1.4, sellModifier: 0.45 },
-  { charisma: 61, buyModifier: 1.39, sellModifier: 0.455 },
-  { charisma: 62, buyModifier: 1.38, sellModifier: 0.46 },
-  { charisma: 63, buyModifier: 1.37, sellModifier: 0.465 },
-  { charisma: 64, buyModifier: 1.36, sellModifier: 0.47 },
-  { charisma: 65, buyModifier: 1.35, sellModifier: 0.475 },
-  { charisma: 66, buyModifier: 1.34, sellModifier: 0.48 },
-  { charisma: 67, buyModifier: 1.33, sellModifier: 0.485 },
-  { charisma: 68, buyModifier: 1.32, sellModifier: 0.49 },
-  { charisma: 69, buyModifier: 1.31, sellModifier: 0.495 },
-  { charisma: 70, buyModifier: 1.3, sellModifier: 0.5 },
-  { charisma: 71, buyModifier: 1.29, sellModifier: 0.505 },
-  { charisma: 72, buyModifier: 1.28, sellModifier: 0.51 },
-  { charisma: 73, buyModifier: 1.27, sellModifier: 0.515 },
-  { charisma: 74, buyModifier: 1.26, sellModifier: 0.52 },
-  { charisma: 75, buyModifier: 1.25, sellModifier: 0.525 },
-  { charisma: 76, buyModifier: 1.24, sellModifier: 0.53 },
-  { charisma: 77, buyModifier: 1.23, sellModifier: 0.535 },
-  { charisma: 78, buyModifier: 1.22, sellModifier: 0.54 },
-  { charisma: 79, buyModifier: 1.21, sellModifier: 0.545 },
-  { charisma: 80, buyModifier: 1.2, sellModifier: 0.55 },
-  { charisma: 81, buyModifier: 1.19, sellModifier: 0.555 },
-  { charisma: 82, buyModifier: 1.18, sellModifier: 0.56 },
-  { charisma: 83, buyModifier: 1.17, sellModifier: 0.565 },
-  { charisma: 84, buyModifier: 1.16, sellModifier: 0.57 },
-  { charisma: 85, buyModifier: 1.15, sellModifier: 0.575 },
-  { charisma: 86, buyModifier: 1.14, sellModifier: 0.58 },
-  { charisma: 87, buyModifier: 1.13, sellModifier: 0.585 },
-  { charisma: 88, buyModifier: 1.12, sellModifier: 0.59 },
-  { charisma: 89, buyModifier: 1.11, sellModifier: 0.595 },
-  { charisma: 90, buyModifier: 1.1, sellModifier: 0.6 },
-  { charisma: 91, buyModifier: 1.09, sellModifier: 0.605 },
-  { charisma: 92, buyModifier: 1.08, sellModifier: 0.61 },
-  { charisma: 93, buyModifier: 1.07, sellModifier: 0.615 },
-  { charisma: 94, buyModifier: 1.06, sellModifier: 0.62 },
-  { charisma: 95, buyModifier: 1.05, sellModifier: 0.625 },
-  { charisma: 96, buyModifier: 1.04, sellModifier: 0.625 },
-  { charisma: 97, buyModifier: 1.03, sellModifier: 0.625 },
-  { charisma: 98, buyModifier: 1.02, sellModifier: 0.625 },
-  { charisma: 99, buyModifier: 1.01, sellModifier: 0.625 },
-  { charisma: 100, buyModifier: 1, sellModifier: 0.625 },
-];
+import { charismaTable } from '../constants/charismaTable';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCircleInfo } from '@fortawesome/free-solid-svg-icons';
 
 export default function CharismaPriceCalc() {
   const [charisma, setCharisma] = useState<string>('5');
@@ -288,7 +188,7 @@ export default function CharismaPriceCalc() {
   }, [vendorPrice, priceTable]);
 
   return (
-    <main className="container mx-auto px-4 py-8">
+    <main className="container mx-auto px-2 sm:px-4 py-4 sm:py-6 max-w-4xl">
       {/* Skip link */}
       <a 
         href="#price-table"
@@ -306,16 +206,43 @@ export default function CharismaPriceCalc() {
         {announcement}
       </div>
 
-      <h1 className="text-3xl font-bold mb-6">{strings.charismaPriceCalc.title}</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">{strings.charismaPriceCalc.title}</h1>
+
+      <section aria-labelledby="charisma-source-heading" className="mb-4 sm:mb-8">
+        <h2 id="charisma-source-heading" className="text-xl sm:text-2xl font-semibold mb-2">
+          <a
+            href={strings.charismaPriceCalc.sourceLink}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-700 hover:text-blue-900 transition-colors"
+          >
+            {strings.charismaPriceCalc.sourceCredits}
+          </a>
+        </h2>
+        <p className="text-sm text-gray-700">
+          {strings.charismaPriceCalc.sourceDate}
+        </p>
+      </section>
       
       {/* Form section */}
-      <section aria-labelledby="form-heading">
-        <h2 id="form-heading" className="sr-only">Price Calculator Inputs</h2>
+      <section aria-labelledby="form-heading" className="bg-white rounded-t-lg shadow-sm border border-b-0 border-gray-200">
+        <h2 id="form-heading" className="text-lg font-semibold p-4 border-b border-gray-200">Calculator Inputs</h2>
         
-        <div className="space-y-4">
-          <div className="mb-4">
-            <label htmlFor={charismaInputId} className="block text-sm font-medium text-gray-900">
+        <div className="grid gap-4 sm:grid-cols-2 p-4">
+          <div>
+            <label htmlFor={charismaInputId} className="block text-sm font-medium text-gray-700 mb-1">
               Charisma Stat
+              <span className="inline-flex items-center ml-1.5 group relative">
+                <FontAwesomeIcon 
+                  icon={faCircleInfo}
+                  className="h-4 w-4 text-gray-400 hover:text-gray-500" 
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Valid range information</span>
+                <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10">
+                  Valid range: {formatNumber(1)} - {formatNumber(100)}
+                </div>
+              </span>
             </label>
             <input
               id={charismaInputId}
@@ -323,14 +250,16 @@ export default function CharismaPriceCalc() {
               value={charisma}
               onChange={handleCharismaChange}
               aria-invalid={!!errors.charisma}
-              aria-describedby={errors.charisma ? charismaErrorId : undefined}
-              aria-label={`Enter charisma value between ${formatNumber(1)} and ${formatNumber(100)}`}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              aria-describedby={`${errors.charisma ? charismaErrorId : ''} charisma-range-desc`}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-3 py-1"
             />
+            <span id="charisma-range-desc" className="sr-only">
+              Valid range is {formatNumber(1)} to {formatNumber(100)}
+            </span>
             {errors.charisma && (
               <p 
                 id={charismaErrorId}
-                className="mt-1 text-sm text-red-700" 
+                className="mt-1 text-xs text-red-600" 
                 role="alert"
               >
                 {errors.charisma}
@@ -338,9 +267,20 @@ export default function CharismaPriceCalc() {
             )}
           </div>
 
-          <div className="mb-4">
-            <label htmlFor={vendorPriceInputId} className="block text-sm font-medium text-gray-900">
+          <div>
+            <label htmlFor={vendorPriceInputId} className="block text-sm font-medium text-gray-700 mb-1">
               Vendor Price
+              <span className="inline-flex items-center ml-1.5 group relative">
+                <FontAwesomeIcon 
+                  icon={faCircleInfo}
+                  className="h-4 w-4 text-gray-400 hover:text-gray-500" 
+                  aria-hidden="true"
+                />
+                <span className="sr-only">Valid range information</span>
+                <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10">
+                  Valid range: {formatNumber(1)} - {formatNumber(40000)}
+                </div>
+              </span>
             </label>
             <input
               id={vendorPriceInputId}
@@ -348,14 +288,16 @@ export default function CharismaPriceCalc() {
               value={vendorPrice}
               onChange={handleVendorPriceChange}
               aria-invalid={!!errors.vendorPrice}
-              aria-describedby={`${errors.vendorPrice ? vendorPriceErrorId : ''} ${vendorPriceDescId}`}
-              aria-label={`Enter vendor price between ${formatNumber(1)} and ${formatNumber(40000)}`}
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
+              aria-describedby={`${errors.vendorPrice ? vendorPriceErrorId : ''} ${vendorPriceDescId} vendor-range-desc`}
+              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-3 py-1"
             />
+            <span id="vendor-range-desc" className="sr-only">
+              Valid range is {formatNumber(1)} to {formatNumber(40000)}
+            </span>
             {errors.vendorPrice && (
               <p 
                 id={vendorPriceErrorId}
-                className="mt-1 text-sm text-red-700" 
+                className="mt-1 text-xs text-red-600" 
                 role="alert"
               >
                 {errors.vendorPrice}
@@ -364,7 +306,7 @@ export default function CharismaPriceCalc() {
             {typeof vendorPrice === 'number' && !errors.vendorPrice && (
               <p 
                 id={vendorPriceDescId}
-                className="mt-1 text-sm text-gray-700"
+                className="mt-1 text-xs text-gray-600"
               >
                 Formatted: {formatNumber(Number(vendorPrice))}
               </p>
@@ -376,19 +318,19 @@ export default function CharismaPriceCalc() {
       {/* Results section */}
       <section 
         aria-labelledby="results-heading"
-        className="mb-4"
+        className="bg-white rounded-b-lg shadow-sm border border-gray-200 overflow-hidden"
         id="price-table"
       >
-        <h2 id="results-heading" className="sr-only">Price Table Results</h2>
+        <h2 id="results-heading" className="text-lg font-semibold p-4 border-b border-gray-200">Price Table Results</h2>
         
         <div 
-          className="max-h-96 overflow-y-auto" 
+          className="max-h-[calc(100vh-24rem)] overflow-y-auto" 
           ref={tableRef}
           role="region" 
           aria-label="Scrollable price table"
         >
           <table 
-            className="min-w-full divide-y divide-gray-200"
+            className="w-full divide-y divide-gray-200"
             onKeyDown={handleTableKeyDown}
             role="grid"
             aria-rowcount={priceTable.length}
@@ -399,28 +341,34 @@ export default function CharismaPriceCalc() {
               Use up and down arrow keys to navigate, Home and End to jump to start or end, 
               PageUp and PageDown to move by 10 rows.
             </caption>
-            <thead className="sticky top-0">
-              <tr>
+            <thead className="sticky top-0 z-10">
+              <tr className="bg-gray-50 shadow-sm">
                 <th 
                   scope="col"
-                  className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider"
+                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-900"
                 >
                   Charisma
                 </th>
                 <th 
                   scope="col"
-                  className="px-6 py-3 bg-gray-100 text-left text-xs font-medium text-gray-900 uppercase tracking-wider"
+                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-900"
                 >
                   Buy Price
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="divide-y divide-gray-200">
               {priceTable.map((entry, index) => (
                 <tr 
                   key={entry.charisma}
                   data-charisma={entry.charisma}
-                  className={Number(charisma) === entry.charisma ? "bg-indigo-100 focus:outline-none focus:ring-2 focus:ring-indigo-500" : ""}
+                  className={`
+                    ${Number(charisma) === entry.charisma 
+                      ? "bg-blue-100 border-y border-blue-200" 
+                      : "hover:bg-gray-50"
+                    }
+                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:relative transition-colors
+                  `}
                   tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
                   role="row"
                   aria-selected={Number(charisma) === entry.charisma}
@@ -428,13 +376,13 @@ export default function CharismaPriceCalc() {
                   ref={Number(charisma) === entry.charisma ? highlightedRowRef : null}
                 >
                   <td 
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm text-gray-900"
                     role="gridcell"
                   >
                     {entry.charisma}
                   </td>
                   <td 
-                    className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm text-gray-900"
                     role="gridcell"
                   >
                     {entry.buyPrice}

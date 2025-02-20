@@ -106,12 +106,19 @@ const charismaTable = [
 ];
 
 export default function CharismaPriceCalc() {
-  const [charisma, setCharisma] = useState(5);
-  const [vendorPrice, setVendorPrice] = useState(50);
+  const [charisma, setCharisma] = useState<string>('5');
+  const [vendorPrice, setVendorPrice] = useState<string>('50');
+  const [errors, setErrors] = useState({ charisma: '', vendorPrice: '' });
   const highlightedRowRef = useRef<HTMLTableRowElement>(null);
+  const tableRef = useRef<HTMLDivElement>(null);
+
+  // Get the user's locale, falling back to 'en-US' if not available
+  const userLocale = typeof navigator !== 'undefined' 
+    ? navigator.language || navigator.languages[0] || 'en-US'
+    : 'en-US';
 
   useEffect(() => {
-    if (highlightedRowRef.current) {
+    if (highlightedRowRef.current && typeof charisma === 'number' && typeof vendorPrice === 'number') {
       highlightedRowRef.current.scrollIntoView({
         behavior: 'smooth',
         block: 'center'
@@ -123,27 +130,73 @@ export default function CharismaPriceCalc() {
     }
   }, [charisma, vendorPrice]);
 
+  useEffect(() => {
+    const numCharisma = Number(charisma);
+    if (isNaN(numCharisma) || errors.charisma || !tableRef.current) return;
+
+    const observer = new ResizeObserver(() => {
+      const row = tableRef.current?.querySelector(`tr[data-charisma="${numCharisma}"]`);
+      if (row && tableRef.current) {
+        const rowTop = (row as HTMLElement).offsetTop;
+        const containerHeight = tableRef.current.clientHeight;
+        const scrollPosition = rowTop - (containerHeight / 2) + (row as HTMLElement).offsetHeight / 2;
+        
+        tableRef.current.scrollTop = scrollPosition;
+      }
+    });
+
+    observer.observe(tableRef.current);
+    return () => observer.disconnect();
+  }, [charisma, errors.charisma]);
+
   const handleCharismaChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setCharisma(Number(e.target.value));
+    const value = e.target.value;
+    setCharisma(value);
+    
+    if (value === '') {
+      setErrors(prev => ({ ...prev, charisma: `Please enter a Charisma value (${formatNumber(1)}-${formatNumber(100)})` }));
+    } else if (Number(value) < 1 || Number(value) > 100) {
+      setErrors(prev => ({ ...prev, charisma: `Charisma must be between ${formatNumber(1)} and ${formatNumber(100)}` }));
+    } else {
+      setErrors(prev => ({ ...prev, charisma: '' }));
+    }
   };
 
   const handleVendorPriceChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setVendorPrice(Number(e.target.value));
+    const value = e.target.value;
+    setVendorPrice(value);
+    
+    if (value === '') {
+      setErrors(prev => ({ ...prev, vendorPrice: `Please enter a Vendor Price value (${formatNumber(1)}-${formatNumber(40000)})` }));
+    } else if (Number(value) < 1 || Number(value) > 40000) {
+      setErrors(prev => ({ ...prev, vendorPrice: `Vendor Price must be between ${formatNumber(1)} and ${formatNumber(40000)}` }));
+    } else {
+      setErrors(prev => ({ ...prev, vendorPrice: '' }));
+    }
   };
 
-  const calculatePrices = (price: number) => {
-    const currentModifiers = charismaTable.find(entry => entry.charisma === charisma);
+  const formatNumber = (num: number): string => {
+    return new Intl.NumberFormat(userLocale).format(num);
+  };
+
+  const calculatePrices = (price: string) => {
+    const numCharisma = Number(charisma);
+    const numPrice = Number(price);
+    
+    if (isNaN(numCharisma) || isNaN(numPrice) || errors.charisma || errors.vendorPrice) return [];
+    
+    const currentModifiers = charismaTable.find(entry => entry.charisma === numCharisma);
     if (!currentModifiers) return [];
     
-    const basePrice = price / currentModifiers.buyModifier;
+    const basePrice = numPrice / currentModifiers.buyModifier;
     
     return charismaTable.map((entry) => ({
       charisma: entry.charisma,
-      buyPrice: (basePrice * entry.buyModifier).toFixed(2),
+      buyPrice: formatNumber(Number((basePrice * entry.buyModifier).toFixed(2))),
     }));
   };
 
-  const priceTable = calculatePrices(vendorPrice);
+  const priceTable = vendorPrice ? calculatePrices(vendorPrice) : [];
 
   return (
     <Layout title={strings.charismaPriceCalc.title}>
@@ -156,9 +209,10 @@ export default function CharismaPriceCalc() {
             value={charisma}
             onChange={handleCharismaChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
-            min="1"
-            max="100"
           />
+          {errors.charisma && (
+            <p className="mt-1 text-sm text-red-600">{errors.charisma}</p>
+          )}
         </div>
         <div className="mb-4">
           <label className="block text-sm font-medium text-gray-700">Vendor Price</label>
@@ -168,9 +222,15 @@ export default function CharismaPriceCalc() {
             onChange={handleVendorPriceChange}
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm"
           />
+          {errors.vendorPrice && (
+            <p className="mt-1 text-sm text-red-600">{errors.vendorPrice}</p>
+          )}
+          {typeof vendorPrice === 'number' && !errors.vendorPrice && (
+            <p className="mt-1 text-sm text-gray-500">Formatted: {formatNumber(Number(vendorPrice))}</p>
+          )}
         </div>
         <div className="mb-4">
-          <div className="max-h-96 overflow-y-auto">
+          <div className="max-h-96 overflow-y-auto" ref={tableRef}>
             <table className="min-w-full divide-y divide-gray-200">
               <thead className="sticky top-0">
                 <tr>
@@ -186,11 +246,11 @@ export default function CharismaPriceCalc() {
                 {priceTable.map((entry) => (
                   <tr 
                     key={entry.charisma}
-                    ref={entry.charisma === charisma ? highlightedRowRef : null}
-                    className={entry.charisma === charisma ? "bg-indigo-50" : ""}
-                    tabIndex={entry.charisma === charisma ? 0 : -1}
+                    data-charisma={entry.charisma}
+                    className={Number(charisma) === entry.charisma ? "bg-indigo-50" : ""}
+                    tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
                     role="row"
-                    aria-selected={entry.charisma === charisma}
+                    aria-selected={Number(charisma) === entry.charisma}
                   >
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.charisma}</td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{entry.buyPrice}</td>

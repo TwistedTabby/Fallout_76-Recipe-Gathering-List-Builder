@@ -1,8 +1,10 @@
 import { Link, Outlet } from 'react-router-dom';
 import { strings } from '../constants/strings';
-import { useState, ReactNode } from 'react';
+import { useState, ReactNode, useEffect } from 'react';
 import * as colorSchemes from '../constants/colors';
 import { ColorScheme } from '../constants/colors';
+import logo from '../assets/TwistedTabby_FalloutLogo.PNG';
+import Cookies from 'js-cookie';
 
 interface LayoutProps {
   title?: string;
@@ -45,79 +47,109 @@ const defaultSchemeName = ('vaultstandard' in availableSchemes
   ? 'vaultstandard' 
   : Object.keys(availableSchemes)[0]) as ColorSchemeName;
 
-const NavLinks = ({ children }: { children?: ReactNode }) => (
-  <>
-    <Link 
-      to="/" 
-      className="block px-4 py-2 hover:bg-opacity-10 font-medium" 
-      style={{ 
-        color: 'var(--dark-contrast)',
-        textDecoration: 'none',
-        borderBottom: '2px solid transparent',
-        transition: 'border-color 0.2s ease-in-out'
-      }}
-    >
-      {strings.general.home}
-    </Link>
-    <Link 
-      to="/recipes" 
-      className="block px-4 py-2 hover:bg-opacity-10 font-medium" 
-      style={{ 
-        color: 'var(--dark-contrast)',
-        textDecoration: 'none',
-        borderBottom: '2px solid transparent',
-        transition: 'border-color 0.2s ease-in-out'
-      }}
-    >
-      {strings.recipes.title}
-    </Link>
-    <Link 
-      to="/gathering-list" 
-      className="block px-4 py-2 hover:bg-opacity-10 font-medium" 
-      style={{ 
-        color: 'var(--dark-contrast)',
-        textDecoration: 'none',
-        borderBottom: '2px solid transparent',
-        transition: 'border-color 0.2s ease-in-out'
-      }}
-    >
-      {strings.gatheringList.title}
-    </Link>
-    <Link 
-      to="/charisma-price-calc" 
-      className="block px-4 py-2 hover:bg-opacity-10 font-medium" 
-      style={{ 
-        color: 'var(--dark-contrast)',
-        textDecoration: 'none',
-        borderBottom: '2px solid transparent',
-        transition: 'border-color 0.2s ease-in-out'
-      }}
-    >
-      {strings.charismaPriceCalc.shortTitle}
-    </Link>
-    <Link 
-      to="/farming-tracker" 
-      className="block px-4 py-2 hover:bg-opacity-10 font-medium" 
-      style={{ 
-        color: 'var(--dark-contrast)',
-        textDecoration: 'none',
-        borderBottom: '2px solid transparent',
-        transition: 'border-color 0.2s ease-in-out'
-      }}
-    >
-      Farming Tracker
-    </Link>
-    {children}
-  </>
-);
+const COOKIE_NAME = 'preferred-color-scheme';
+
+const NavLinks = () => {
+  const [isToolsOpen, setIsToolsOpen] = useState(false);
+
+  return (
+    <>
+      <Link 
+        to="/" 
+        className="block px-4 py-2 hover:bg-opacity-10 font-medium flex items-center" 
+        style={{ 
+          color: 'var(--dark-contrast)',
+          textDecoration: 'none',
+          borderBottom: '2px solid transparent',
+          transition: 'border-color 0.2s ease-in-out',
+          height: '100%'
+        }}
+      >
+        {strings.general.home}
+      </Link>
+      
+      {/* Tools Dropdown */}
+      <div 
+        className="relative h-full flex items-center"
+        onMouseEnter={() => setIsToolsOpen(true)}
+        onMouseLeave={() => setIsToolsOpen(false)}
+      >
+        <div
+          className="block px-4 py-2 hover:bg-opacity-10 font-medium flex items-center cursor-pointer"
+          style={{ 
+            color: 'var(--dark-contrast)',
+            textDecoration: 'none',
+            borderBottom: '2px solid transparent',
+            transition: 'border-color 0.2s ease-in-out',
+            height: '100%'
+          }}
+        >
+          Tools
+          <span className="ml-1">▼</span>
+        </div>
+        
+        {isToolsOpen && (
+          <>
+            {/* Invisible gap to maintain hover */}
+            <div 
+              className="absolute left-0 w-48 h-4"
+              style={{ 
+                top: '100%'
+              }}
+            />
+            <div 
+              className="absolute left-0 w-48 rounded-md shadow-lg"
+              style={{ 
+                backgroundColor: 'var(--light-contrast)',
+                border: '1px solid var(--secondary-accent)',
+                zIndex: 50,
+                top: 'calc(100% + 0.5rem)'
+              }}
+            >
+              <Link 
+                to="/charisma-price-calc" 
+                className="block px-4 py-2 hover:bg-opacity-10 font-medium hover:bg-secondary-accent/10 first:rounded-t-md"
+                style={{ 
+                  color: 'var(--dark-contrast)',
+                  textDecoration: 'none'
+                }}
+              >
+                Charisma Pricing
+              </Link>
+              <Link 
+                to="/farming-tracker" 
+                className="block px-4 py-2 hover:bg-opacity-10 font-medium hover:bg-secondary-accent/10 last:rounded-b-md"
+                style={{ 
+                  color: 'var(--dark-contrast)',
+                  textDecoration: 'none'
+                }}
+              >
+                Farming Tracker
+              </Link>
+            </div>
+          </>
+        )}
+      </div>
+    </>
+  );
+};
 
 const Layout = ({ children, title }: LayoutProps) => {
-  const [currentScheme, setCurrentScheme] = useState<ColorSchemeName>(defaultSchemeName);
+  const [currentScheme, setCurrentScheme] = useState<ColorSchemeName>(() => {
+    // Try to get the color scheme from cookie, fallback to default
+    const savedScheme = Cookies.get(COOKIE_NAME) as ColorSchemeName;
+    return savedScheme && availableSchemes[savedScheme] ? savedScheme : defaultSchemeName;
+  });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const pageTitle = title || strings.appTitle;
 
   // Use the selected color scheme
   const colors = availableSchemes[currentScheme];
+
+  // Save color scheme to cookie whenever it changes
+  useEffect(() => {
+    Cookies.set(COOKIE_NAME, currentScheme, { expires: 365 }); // Cookie expires in 1 year
+  }, [currentScheme]);
 
   return (
     <div
@@ -148,40 +180,44 @@ const Layout = ({ children, title }: LayoutProps) => {
         backgroundColor: 'var(--light-contrast)',
         borderBottom: '1px solid var(--secondary-accent)',
       }}>
-        <div className="container mx-auto px-4">
+        <div className="container mx-auto px-4 py-4">
           <div className="flex justify-between h-16">
             <div className="flex">
               <Link 
                 to="/" 
-                className="flex-shrink-0 flex items-center font-bold"
+                className="flex-shrink-0 flex items-center font-bold gap-2"
                 style={{ color: 'var(--main-accent)' }}
               >
-                {pageTitle}
+                <img src={logo} alt="Twisted Tabby Logo" className="h-16 w-16" />
               </Link>
               {/* Desktop Navigation */}
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <NavLinks>
-                  <select
-                    value={currentScheme}
-                    onChange={(e) => setCurrentScheme(e.target.value as ColorSchemeName)}
-                    className="ml-4 rounded py-1 px-2"
-                    style={{
-                      backgroundColor: 'var(--light-contrast)',
-                      color: 'var(--dark-contrast)',
-                      border: '2px solid var(--secondary-accent)',
-                      fontWeight: 'medium'
-                    }}
-                    aria-label="Select color theme"
-                  >
-                    {Object.entries(availableSchemes).map(([schemeName, scheme]) => (
-                      <option key={schemeName} value={schemeName}>
-                        {scheme.themeName}
-                      </option>
-                    ))}
-                  </select>
-                </NavLinks>
+              <div className="hidden sm:ml-6 sm:flex sm:space-x-8 sm:items-center h-full">
+                <NavLinks />
               </div>
             </div>
+
+            {/* Right side content */}
+            <div className="hidden sm:flex items-center">
+              <select
+                value={currentScheme}
+                onChange={(e) => setCurrentScheme(e.target.value as ColorSchemeName)}
+                className="rounded py-1 px-2"
+                style={{
+                  backgroundColor: 'var(--light-contrast)',
+                  color: 'var(--dark-contrast)',
+                  border: '2px solid var(--secondary-accent)',
+                  fontWeight: 'medium'
+                }}
+                aria-label="Select color theme"
+              >
+                {Object.entries(availableSchemes).map(([schemeName, scheme]) => (
+                  <option key={schemeName} value={schemeName}>
+                    {scheme.themeName}
+                  </option>
+                ))}
+              </select>
+            </div>
+
             {/* Mobile menu button */}
             <div className="sm:hidden flex items-center">
               <button
@@ -219,7 +255,40 @@ const Layout = ({ children, title }: LayoutProps) => {
           }}
         >
           <div className="pt-2 pb-3 space-y-1">
-            <NavLinks />
+            <Link 
+              to="/" 
+              className="block px-4 py-2 hover:bg-opacity-10 font-medium"
+              style={{ color: 'var(--dark-contrast)' }}
+              onClick={() => setIsMobileMenuOpen(false)}
+            >
+              {strings.general.home}
+            </Link>
+            
+            {/* Tools Section */}
+            <div className="px-4 py-2">
+              <div className="font-medium" style={{ color: 'var(--dark-contrast)' }}>
+                Tools
+              </div>
+              <div className="pl-4 mt-2 space-y-1">
+                <Link 
+                  to="/charisma-price-calc" 
+                  className="block px-4 py-2 hover:bg-opacity-10"
+                  style={{ color: 'var(--dark-contrast)' }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Charisma Pricing
+                </Link>
+                <Link 
+                  to="/farming-tracker" 
+                  className="block px-4 py-2 hover:bg-opacity-10"
+                  style={{ color: 'var(--dark-contrast)' }}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Farming Tracker
+                </Link>
+              </div>
+            </div>
+
             <div className="px-4 py-2">
               <select
                 value={currentScheme}

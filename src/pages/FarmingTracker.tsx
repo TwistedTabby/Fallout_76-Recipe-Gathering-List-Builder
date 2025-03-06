@@ -18,7 +18,8 @@ import {
   faUpload,
   faInfoCircle,
   faEllipsisV,
-  faHistory
+  faHistory,
+  faPlus
 } from '@fortawesome/free-solid-svg-icons';
 import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
 // Import your API module if it exists
@@ -229,11 +230,19 @@ const FarmingTracker: React.FC = () => {
   // Add state for expanded actions
   const [expandedActions, setExpandedActions] = useState<Record<string, boolean>>({});
 
+  // Add state for Create new Route section visibility
+  const [isCreateRouteExpanded, setIsCreateRouteExpanded] = useState(true);
+
   // Refs
   const routeNameInputRef = useRef<HTMLInputElement>(null);
   const stopNameInputRef = useRef<HTMLInputElement>(null);
   const itemNameInputRef = useRef<HTMLInputElement>(null);
   const focusTimeoutRef = useRef<number | null>(null);
+
+  // Update isCreateRouteExpanded based on routes existence
+  useEffect(() => {
+    setIsCreateRouteExpanded(routes.length === 0);
+  }, [routes]);
 
   // Function to show a custom confirm dialog
   const customConfirm = (message: string): Promise<boolean> => {
@@ -2467,77 +2476,11 @@ const FarmingTracker: React.FC = () => {
             <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--main-accent)' }}>
               Route Management
             </h2>
-            
-            {/* Create New Route */}
-            <div className="mb-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--light-contrast)', border: '1px solid var(--secondary-accent)' }}>
-              <h3 className="text-lg font-medium mb-2">Create New Route</h3>
-              <div className="mb-3">
-                <label className="block mb-1">Route Name:</label>
-                <input
-                  type="text"
-                  value={newRouteName}
-                  onChange={(e) => setNewRouteName(e.target.value)}
-                  onKeyDown={(e) => handleKeyPress(e, createRoute)}
-                  className="w-full p-2 rounded"
-                  style={{ 
-                    backgroundColor: 'var(--light-contrast)', 
-                    color: 'var(--dark-contrast)', 
-                    border: '1px solid var(--secondary-accent)' 
-                  }}
-                  placeholder="e.g., Acid Run"
-                  ref={routeNameInputRef}
-                />
-              </div>
-              <div className="mb-3">
-                <label className="block mb-1">Description:</label>
-                <textarea
-                  value={newRouteDescription}
-                  onChange={(e) => setNewRouteDescription(e.target.value)}
-                  className="w-full p-2 rounded"
-                  style={{ 
-                    backgroundColor: 'var(--light-contrast)', 
-                    color: 'var(--dark-contrast)', 
-                    border: '1px solid var(--secondary-accent)' 
-                  }}
-                  placeholder="e.g., A route for collecting acid from various locations"
-                />
-              </div>
-              <div className="mb-3">
-                <label className="flex items-center">
-                  <input
-                    type="checkbox"
-                    checked={newRouteAutoInventoryChecks}
-                    onChange={(e) => setNewRouteAutoInventoryChecks(e.target.checked)}
-                    className="mr-2"
-                  />
-                  <span>Auto Inventory Checks</span>
-                </label>
-                <small className="block mt-1" style={{ color: 'var(--text-muted)' }}>
-                  When checked, the app will ask for inventory count information for harvestable items within the route.
-                </small>
-              </div>
-              <button
-                onClick={createRoute}
-                className="px-4 py-2 rounded"
-                style={{ 
-                  backgroundColor: 'var(--main-accent)', 
-                  color: 'var(--dark-contrast)',
-                  fontWeight: 'bold'
-                }}
-              >
-                Create Route
-              </button>
-              <small className="block mt-2" style={{ color: 'var(--text-muted)' }}>
-                Tip: Press Enter in the name field to create the route
-              </small>
-            </div>
-            
-            {/* Route List */}
-            <div className="mb-6">
-              <h3 className="text-lg font-medium mb-2">Your Routes</h3>
-              {routes.length === 0 ? (
-                <p>No routes created yet.</p>
-              ) : (
+
+            {/* Your Routes Section */}
+            {routes.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-lg font-medium mb-2">Your Routes</h3>
                 <ul className="space-y-4">
                   {routes.map(route => (
                     <li 
@@ -2549,17 +2492,7 @@ const FarmingTracker: React.FC = () => {
                         color: currentRoute?.id === route.id ? 'var(--light-contrast)' : undefined
                       }}
                     >
-                      <div 
-                        className="p-4"
-                        onClick={() => {
-                          // Only toggle expanded view when clicking on the route
-                          // Don't set current route here to avoid opening edit panel
-                          setExpandedRoutes(prev => ({
-                            ...prev,
-                            [route.id]: !prev[route.id]
-                          }));
-                        }}
-                      >
+                      <div className="p-4">
                         {/* Route title on top line */}
                         <div className="text-lg font-medium mb-2">{route?.name}</div>
                         
@@ -2567,29 +2500,8 @@ const FarmingTracker: React.FC = () => {
                         <div className="flex items-center mb-3">
                           <span className="text-sm mr-4">{route?.stops.length} stops</span>
                           <span className="text-sm">{route?.completedRuns || 0} runs</span>
-                          {route?.description && (
-                            <div className="relative group ml-4">
-                              <FontAwesomeIcon 
-                                icon={faInfoCircle} 
-                                className="text-sm cursor-help" 
-                                style={{ color: 'var(--main-accent)' }}
-                              />
-                              <div 
-                                className="absolute left-0 bottom-full mb-2 w-64 p-3 rounded shadow-lg hidden group-hover:block z-10"
-                                style={{ 
-                                  backgroundColor: 'var(--light-contrast)', 
-                                  border: '1px solid var(--secondary-accent)',
-                                  color: 'var(--dark-contrast)'
-                                }}
-                              >
-                                <div className="font-medium mb-1">Description:</div>
-                                <div className="text-sm">{route.description}</div>
-                              </div>
-                            </div>
-                          )}
                         </div>
-                        
-                        {/* Buttons that wrap */}
+
                         <div className="flex flex-wrap gap-2">
                           {currentRoute?.id === route.id ? (
                             // Active route - show main buttons and actions flyout
@@ -2612,21 +2524,7 @@ const FarmingTracker: React.FC = () => {
                               >
                                 <FontAwesomeIcon icon={faList} className="mr-1" /> Stops
                               </button>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Need to set current route first before tracking
-                                  handleRouteActivation(route);
-                                  startRouteTracking();
-                                }}
-                                className="px-3 py-2 rounded text-sm font-bold min-w-[80px] flex items-center justify-center"
-                                style={{ 
-                                  backgroundColor: 'var(--actionPositive)', 
-                                  color: 'var(--actionText)'
-                                }}
-                              >
-                                <FontAwesomeIcon icon={faPlay} className="mr-1" /> Start
-                              </button>
+
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2647,24 +2545,24 @@ const FarmingTracker: React.FC = () => {
                               </button>
                             </>
                           ) : (
-                            // Inactive route - show only activate button
+                            // Inactive route - show activate button
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
                                 handleRouteActivation(route);
                               }}
-                              className="px-3 py-2 rounded text-sm font-bold min-w-[80px] flex items-center justify-center"
+                              className="px-3 py-2 rounded text-sm min-w-[80px] flex items-center justify-center"
                               style={{ 
                                 backgroundColor: 'var(--secondary-accent)', 
                                 color: 'var(--light-contrast)'
                               }}
                             >
-                              <FontAwesomeIcon icon={faCheck} className="mr-1" /> Activate
+                              <FontAwesomeIcon icon={faEdit} className="mr-1" /> Edit
                             </button>
                           )}
                         </div>
-                        
-                        {/* Actions flyout row - only visible when actions is expanded */}
+
+                        {/* Actions flyout */}
                         {currentRoute?.id === route.id && expandedActions[route.id] && (
                           <div className="flex flex-wrap gap-2 mt-2 pl-2 pt-2 border-t actions-flyout" style={{ borderColor: 'var(--secondary-accent)' }}>
                             <button
@@ -2688,6 +2586,7 @@ const FarmingTracker: React.FC = () => {
                             >
                               <FontAwesomeIcon icon={faHistory} className="mr-1" /> Clear History
                             </button>
+                            
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -2739,6 +2638,88 @@ const FarmingTracker: React.FC = () => {
                     </li>
                   ))}
                 </ul>
+              </div>
+            )}
+            
+            {/* Create New Route */}
+            <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--light-contrast)', border: '1px solid var(--secondary-accent)' }}>
+              <div 
+                className="flex justify-between items-center cursor-pointer" 
+                onClick={() => setIsCreateRouteExpanded(!isCreateRouteExpanded)}
+              >
+                <h3 className="text-lg font-medium mb-2">Create New Route</h3>
+                <FontAwesomeIcon 
+                  icon={isCreateRouteExpanded ? faTimes : faPlus} 
+                  className="text-lg"
+                  style={{ color: 'var(--secondary-accent)' }}
+                />
+              </div>
+              
+              {isCreateRouteExpanded && (
+                <>
+                  <div className="mb-3">
+                    <label className="block mb-1">Route Name:</label>
+                    <input
+                      type="text"
+                      value={newRouteName}
+                      onChange={(e) => setNewRouteName(e.target.value)}
+                      onKeyDown={(e) => handleKeyPress(e, createRoute)}
+                      className="w-full p-2 rounded"
+                      style={{ 
+                        backgroundColor: 'var(--light-contrast)', 
+                        color: 'var(--dark-contrast)', 
+                        border: '1px solid var(--secondary-accent)' 
+                      }}
+                      placeholder="e.g., Acid Run"
+                      ref={routeNameInputRef}
+                    />
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="block mb-1">Description:</label>
+                    <textarea
+                      value={newRouteDescription}
+                      onChange={(e) => setNewRouteDescription(e.target.value)}
+                      className="w-full p-2 rounded"
+                      style={{ 
+                        backgroundColor: 'var(--light-contrast)', 
+                        color: 'var(--dark-contrast)', 
+                        border: '1px solid var(--secondary-accent)' 
+                      }}
+                      placeholder="e.g., A route for collecting acid from various locations"
+                    />
+                  </div>
+                  
+                  <div className="mb-3">
+                    <label className="flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={newRouteAutoInventoryChecks}
+                        onChange={(e) => setNewRouteAutoInventoryChecks(e.target.checked)}
+                        className="mr-2"
+                      />
+                      <span>Auto Inventory Checks</span>
+                    </label>
+                    <small className="block mt-1" style={{ color: 'var(--text-muted)' }}>
+                      When checked, the app will ask for inventory count information for harvestable items within the route.
+                    </small>
+                  </div>
+                  
+                  <button
+                    onClick={createRoute}
+                    className="px-4 py-2 rounded"
+                    style={{ 
+                      backgroundColor: 'var(--main-accent)', 
+                      color: 'var(--dark-contrast)',
+                      fontWeight: 'bold'
+                    }}
+                  >
+                    Create Route
+                  </button>
+                  <small className="block mt-2" style={{ color: 'var(--text-muted)' }}>
+                    Tip: Press Enter in the name field to create the route
+                  </small>
+                </>
               )}
             </div>
           </div>

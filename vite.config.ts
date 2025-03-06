@@ -8,6 +8,7 @@ export default defineConfig({
       '@': '/src',
     },
   },
+  assetsInclude: ['**/*.PNG'],  // Add support for PNG files
   base: './', // This ensures assets are loaded correctly in production
   build: {
     outDir: 'dist',

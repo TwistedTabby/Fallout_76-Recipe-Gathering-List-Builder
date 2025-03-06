@@ -1,4 +1,3 @@
-import { Link } from 'react-router-dom';
 import { strings } from '../constants/strings';
 
 const HomePage = () => {

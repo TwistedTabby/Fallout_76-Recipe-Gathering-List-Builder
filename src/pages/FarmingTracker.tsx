@@ -1340,30 +1340,6 @@ const FarmingTracker: React.FC = () => {
     setCurrentStopId(null);
   };
 
-  // Function to save the updated route
-  const saveUpdatedRoute = async (route: Route, showNotificationFlag = true) => {
-    try {
-      // If using an API
-      // await api.saveRoute(route); // Uncomment if you have an API
-      await saveRoute(route); // Use this if you defined saveRoute
-      if (showNotificationFlag) {
-        showNotification('Route saved successfully!', 'success');
-      }
-    } catch (error) {
-      console.error('Error saving route:', error);
-      showNotification('Failed to save route.', 'error');
-    }
-  };
-
-  // Simulated save function (if you don't have an API)
-  const saveRoute = async (route: Route) => {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        resolve(true);
-      }, 1000);
-    });
-  };
-
   // Complete the route tracking
   const completeRouteTracking = async () => {
     if (!activeTracking || !currentRoute) return;
@@ -1490,17 +1466,6 @@ const FarmingTracker: React.FC = () => {
       console.error('Error clearing active tracking:', err);
       showNotification('Error clearing tracking data', 'error');
     }
-  };
-
-  // Handle inventory input change
-  const handleInventoryInputChange = (itemId: string, value: string) => {
-    // Convert to number and ensure it's not negative
-    const numValue = Math.max(0, parseInt(value) || 0);
-    
-    setInventoryInputValues(prev => ({
-      ...prev,
-      [itemId]: numValue
-    }));
   };
 
   // Add a manual save function
@@ -2165,7 +2130,7 @@ const FarmingTracker: React.FC = () => {
                     });
                     
                     // Create a list of unique items by name
-                    return Object.entries(itemsByName).map(([name, items]) => {
+                    return Object.entries(itemsByName).map(([name]) => {
                       return (
                         <div key={name} className="space-x-2 flex items-center">
                           <input
@@ -2495,7 +2460,7 @@ const FarmingTracker: React.FC = () => {
                           });
                           
                           // Create a list of unique items by name
-                          return Object.entries(itemsByName).map(([name, items]) => {
+                          return Object.entries(itemsByName).map(([name]) => {
                             // Get the pre and post counts by name
                             const preCount = activeTracking.inventoryData?.preRoute?.[name] || 0;
                             const postCount = activeTracking.inventoryData?.postRoute?.[name];

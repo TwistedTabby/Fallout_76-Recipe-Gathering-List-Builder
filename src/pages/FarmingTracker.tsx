@@ -7,21 +7,16 @@ import {
   faEdit, 
   faPlay, 
   faTrash, 
-  faCheck, 
   faTimes, 
-  faCheckCircle, 
   faArrowLeft, 
   faArrowRight,
-  faGripLines,
-  faSave,
   faDownload,
   faUpload,
-  faInfoCircle,
   faEllipsisV,
   faHistory,
   faPlus
 } from '@fortawesome/free-solid-svg-icons';
-import { DragDropContext, Droppable, Draggable } from 'react-beautiful-dnd';
+// We don't need react-beautiful-dnd for this component
 // Import your API module if it exists
 // import { api } from '../path/to/api'; 
 
@@ -195,14 +190,11 @@ const FarmingTracker: React.FC = () => {
   const [trackingNotes, setTrackingNotes] = useState<string>('');
   const [inventoryInputMode, setInventoryInputMode] = useState<'pre' | 'post' | 'pre-stop' | 'post-stop' | null>(null);
   const [inventoryInputValues, setInventoryInputValues] = useState<Record<string, number>>({});
-  const [currentStopId, setCurrentStopId] = useState<string | null>(null); // Track current stop ID for stop inventory
+  const [currentStopId, setCurrentStopId] = useState<string | null>(null);
 
   // Add state for expanded routes
   const [expandedRoutes, setExpandedRoutes] = useState<Record<string, boolean>>({});
 
-  // Add state for reordering stops
-  const [isReorderingStops, setIsReorderingStops] = useState(false);
-  
   // Add notification state
   const [notification, setNotification] = useState<{
     message: string;
@@ -237,7 +229,6 @@ const FarmingTracker: React.FC = () => {
   const routeNameInputRef = useRef<HTMLInputElement>(null);
   const stopNameInputRef = useRef<HTMLInputElement>(null);
   const itemNameInputRef = useRef<HTMLInputElement>(null);
-  const focusTimeoutRef = useRef<number | null>(null);
 
   // Update isCreateRouteExpanded based on routes existence
   useEffect(() => {
@@ -746,12 +737,11 @@ const FarmingTracker: React.FC = () => {
       if (currentRoute?.id === routeId) {
         setCurrentRoute(null);
         setIsReorderingMode(false);
-        setIsReorderingStops(false);
         setIsReorderingItems(false);
       }
 
       // If the deleted route was being tracked, clear the tracking state
-      if (activeTracking?.routeId === routeId) {
+      if (activeTracking && (activeTracking as RouteProgress).routeId === routeId) {
         setActiveTracking(null);
         setTrackingNotes('');
         setInventoryInputMode(null);
@@ -933,7 +923,7 @@ const FarmingTracker: React.FC = () => {
     if (!currentRoute) return;
     
     // Prevent starting a new tracking session if another route is being tracked
-    if (activeTracking && activeTracking.routeId !== currentRoute.id) {
+    if (activeTracking && 'routeId' in activeTracking && activeTracking.routeId !== currentRoute.id) {
       showNotification('Cannot start tracking - another route is currently being tracked.', 'error');
       return;
     }
@@ -1236,7 +1226,7 @@ const FarmingTracker: React.FC = () => {
     } else if (inventoryInputMode === 'pre-stop' && currentStopId) {
       // For stop-specific tracking, we need to map between names and UUIDs
       const uuidBasedValues: Record<string, number> = {};
-      const addedAmounts: Record<string, number> = {};
+      // This variable is not used in this block, so we can remove it
 
       // Get the current stop
       const currentStop = currentRoute.stops.find(stop => stop.id === currentStopId);
@@ -1470,7 +1460,6 @@ const FarmingTracker: React.FC = () => {
       setActiveTracking(null);
       setTrackingNotes('');
       setIsReorderingMode(false);
-      setIsReorderingStops(false);
       setIsReorderingItems(false);
       setInventoryInputMode(null);
       setInventoryInputValues({});
@@ -1822,7 +1811,6 @@ const FarmingTracker: React.FC = () => {
   const handleRouteActivation = (route: Route) => {
     setCurrentRoute(route);
     setIsReorderingMode(false);
-    setIsReorderingStops(false);
     setIsReorderingItems(false);
     
     // Save the current route ID
@@ -2556,19 +2544,19 @@ const FarmingTracker: React.FC = () => {
                 <h3 className="text-lg font-medium mb-2">Your Routes</h3>
                 
                 {/* Active Tracking Warning */}
-                {activeTracking && currentRoute?.id !== activeTracking.routeId && (
+                {activeTracking && (activeTracking as RouteProgress).routeId && currentRoute?.id !== (activeTracking as RouteProgress).routeId && (
                   <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--main-accent)', color: 'var(--light-contrast)' }}>
                     <div className="flex justify-between items-center">
                       <div>
                         <h4 className="font-bold mb-1">Active Tracking Session</h4>
                         <p className="text-sm">
-                          There is an active tracking session for route: {routes.find(r => r.id === activeTracking.routeId)?.name}
+                          There is an active tracking session for route: {routes.find(r => r.id === (activeTracking as RouteProgress).routeId)?.name}
                         </p>
                       </div>
                       <div className="flex gap-2">
                         <button
                           onClick={() => {
-                            const route = routes.find(r => r.id === activeTracking.routeId);
+                            const route = routes.find(r => r.id === (activeTracking as RouteProgress).routeId);
                             if (route) {
                               handleRouteActivation(route);
                             }
@@ -2658,7 +2646,7 @@ const FarmingTracker: React.FC = () => {
                                     <FontAwesomeIcon icon={faPlay} className="mr-1" /> Start
                                   </button>
                                 )}
-                                {activeTracking && activeTracking.routeId === route.id && (
+                                {activeTracking && (activeTracking as RouteProgress).routeId === route.id && (
                                   <div className="flex gap-2">
                                     <button
                                       onClick={(e) => {
@@ -2690,7 +2678,7 @@ const FarmingTracker: React.FC = () => {
                                     </button>
                                   </div>
                                 )}
-                                {activeTracking && activeTracking.routeId !== route.id && (
+                                {activeTracking && (activeTracking as RouteProgress).routeId !== route.id && (
                                   <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
                                     Another route is active
                                   </div>

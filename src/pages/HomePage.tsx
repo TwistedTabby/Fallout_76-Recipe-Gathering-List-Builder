@@ -11,31 +11,8 @@ const HomePage = () => {
         <div className="hero-content text-center">
           <div className="max-w-md">
             <p className="py-6 text-lg">
-              Build and manage your Fallout 76 gathering lists for crafting food and chems. 
-              Keep track of all the ingredients you need to collect.
+              Optimize your Fallout 76 gameplay with our specialized tools for trading and resource gathering.
             </p>
-            <div className="flex gap-4 justify-center">
-              <Link 
-                to="/recipes" 
-                className="btn" 
-                style={{ 
-                  backgroundColor: 'var(--main-accent)',
-                  color: 'var(--light-contrast)'
-                }}
-              >
-                Browse Recipes
-              </Link>
-              <Link 
-                to="/gathering-list" 
-                className="btn" 
-                style={{ 
-                  backgroundColor: 'var(--secondary-accent)',
-                  color: 'var(--dark-contrast)'
-                }}
-              >
-                View Gathering List
-              </Link>
-            </div>
             
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-8">
               <div className="card shadow-xl" style={{ 
@@ -44,13 +21,13 @@ const HomePage = () => {
               }}>
                 <div className="card-body">
                   <h2 className="card-title" style={{ color: 'var(--main-accent)' }}>
-                    Recipes
+                    Charisma Price Tool
                   </h2>
-                  <p>Browse and select from various food and chem recipes</p>
+                  <p>Calculate optimal selling prices based on your Charisma and perks</p>
                   <ul className="list-disc list-inside text-left">
-                    <li>Filter by category</li>
-                    <li>Search by buff effects</li>
-                    <li>Sort by type</li>
+                    <li>Dynamic price calculations</li>
+                    <li>Perk card combinations</li>
+                    <li>Maximize your caps earnings</li>
                   </ul>
                 </div>
               </div>
@@ -61,13 +38,13 @@ const HomePage = () => {
               }}>
                 <div className="card-body">
                   <h2 className="card-title" style={{ color: 'var(--secondary-accent)' }}>
-                    Gathering List
+                    Farming Route Tracker
                   </h2>
-                  <p>Track ingredients needed for selected recipes</p>
+                  <p>Plan and optimize your resource gathering routes</p>
                   <ul className="list-disc list-inside text-left">
-                    <li>View by category</li>
-                    <li>Total ingredients needed</li>
-                    <li>Easy to follow checklist</li>
+                    <li>Custom route creation</li>
+                    <li>Resource respawn timers</li>
+                    <li>Map integration</li>
                   </ul>
                 </div>
               </div>

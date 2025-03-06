@@ -1,6 +1,6 @@
 import { Link, Outlet } from 'react-router-dom';
 import { strings } from '../constants/strings';
-import { useState, ReactNode, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import * as colorSchemes from '../constants/colors';
 import { ColorScheme } from '../constants/colors';
 import logo from '../assets/TwistedTabby_FalloutLogo.PNG';
@@ -141,7 +141,10 @@ const Layout = ({ children, title }: LayoutProps) => {
     return savedScheme && availableSchemes[savedScheme] ? savedScheme : defaultSchemeName;
   });
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const pageTitle = title || strings.appTitle;
+  // Set document title based on the current page
+  useEffect(() => {
+    document.title = title || strings.appTitle;
+  }, [title]);
 
   // Use the selected color scheme
   const colors = availableSchemes[currentScheme];

@@ -226,7 +226,7 @@ export default function CharismaPriceCalc() {
             className="transition-colors"
             style={{ 
               color: 'var(--main-accent)',
-              '&:hover': { color: 'var(--secondary-accent)' }
+              // Using the hover class instead of inline style for hover effect
             }}
           >
             {strings.charismaPriceCalc.sourceCredits}
@@ -290,11 +290,7 @@ export default function CharismaPriceCalc() {
               className="w-full rounded-md shadow-sm text-base px-3 py-1"
               style={{ 
                 borderColor: errors.charisma ? 'var(--extra-pop)' : 'var(--secondary-accent)',
-                '&:focus': {
-                  borderColor: 'var(--main-accent)',
-                  outline: 'none',
-                  boxShadow: '0 0 0 2px var(--main-accent)'
-                }
+                backgroundColor: errors.charisma ? 'rgba(255,0,0,0.05)' : 'var(--light-contrast)',
               }}
             />
             <span id="charisma-range-desc" className="sr-only">
@@ -344,11 +340,9 @@ export default function CharismaPriceCalc() {
               className="w-full rounded-md shadow-sm text-base px-3 py-1"
               style={{ 
                 borderColor: errors.vendorPrice ? 'var(--extra-pop)' : 'var(--secondary-accent)',
-                '&:focus': {
-                  borderColor: 'var(--main-accent)',
-                  outline: 'none',
-                  boxShadow: '0 0 0 2px var(--main-accent)'
-                }
+                backgroundColor: errors.vendorPrice ? 'rgba(255,0,0,0.05)' : 'var(--light-contrast)',
+                borderWidth: '1px',
+                borderStyle: 'solid'
               }}
             />
             <span id="vendor-range-desc" className="sr-only">
@@ -451,10 +445,9 @@ export default function CharismaPriceCalc() {
                       ? 'var(--main-accent)' 
                       : 'var(--light-contrast)',
                     borderColor: 'var(--secondary-accent)',
-                    '&:hover': { backgroundColor: 'var(--secondary-accent)' },
-                    '&:focus': { 
-                      ringColor: 'var(--main-accent)',
-                    }
+                    // Remove hover style from inline style object and handle it with className instead
+                    // Focus styles are already handled by the className
+                    // with focus:outline-none focus:ring-2
                   }}
                   tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
                   role="row"

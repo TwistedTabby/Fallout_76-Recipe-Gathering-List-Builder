@@ -26,7 +26,7 @@ export const strings = {
     acronym: 'S.P.E.C.I.A.L.'
   },
   gatheringList: {
-    title: 'Gathering List',
+    title: 'List',
     viewOptions: {
       allCategories: 'All Categories',
       specificCategory: 'Specific Category',
@@ -64,7 +64,7 @@ export const strings = {
   },
   charismaPriceCalc: {
     title: 'Charisma to Price Calculator',
-    shortTitle: 'CHR Price Calc', // For navigation
+    shortTitle: 'NPC Vendor Pricing', // For navigation
     sourceCredits: 'Data sourced from The DuchessFlame',
     sourceLink: 'https://www.theduchessflame.com/post/charisma-and-barter-prices-how-it-works-in-fallout-76',
     sourceDate: 'Data updated on 2025-02-19'

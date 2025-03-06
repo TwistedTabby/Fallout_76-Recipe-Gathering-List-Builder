@@ -192,7 +192,11 @@ export default function CharismaPriceCalc() {
       {/* Skip link */}
       <a 
         href="#price-table"
-        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2 focus:bg-white focus:border focus:border-indigo-500"
+        className="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-2"
+        style={{
+          backgroundColor: 'var(--light-contrast)',
+          borderColor: 'var(--main-accent)',
+        }}
       >
         Skip to price table
       </a>
@@ -206,7 +210,12 @@ export default function CharismaPriceCalc() {
         {announcement}
       </div>
 
-      <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6 text-gray-900">{strings.charismaPriceCalc.title}</h1>
+      <h1 
+        className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6"
+        style={{ color: 'var(--dark-contrast)' }}
+      >
+        {strings.charismaPriceCalc.title}
+      </h1>
 
       <section aria-labelledby="charisma-source-heading" className="mb-4 sm:mb-8">
         <h2 id="charisma-source-heading" className="text-xl sm:text-2xl font-semibold mb-2">
@@ -214,32 +223,59 @@ export default function CharismaPriceCalc() {
             href={strings.charismaPriceCalc.sourceLink}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-700 hover:text-blue-900 transition-colors"
+            className="transition-colors"
+            style={{ 
+              color: 'var(--main-accent)',
+              '&:hover': { color: 'var(--secondary-accent)' }
+            }}
           >
             {strings.charismaPriceCalc.sourceCredits}
           </a>
         </h2>
-        <p className="text-sm text-gray-700">
+        <p style={{ color: 'var(--dark-contrast)' }} className="text-sm opacity-75">
           {strings.charismaPriceCalc.sourceDate}
         </p>
       </section>
       
       {/* Form section */}
-      <section aria-labelledby="form-heading" className="bg-white rounded-t-lg shadow-sm border border-b-0 border-gray-200">
-        <h2 id="form-heading" className="text-lg font-semibold p-4 border-b border-gray-200">Calculator Inputs</h2>
+      <section 
+        aria-labelledby="form-heading" 
+        className="rounded-t-lg shadow-sm border border-b-0"
+        style={{ 
+          backgroundColor: 'var(--light-contrast)',
+          borderColor: 'var(--secondary-accent)'
+        }}
+      >
+        <h2 
+          id="form-heading" 
+          className="text-lg font-semibold p-4 border-b"
+          style={{ 
+            borderColor: 'var(--secondary-accent)',
+            color: 'var(--dark-contrast)'
+          }}
+        >
+          Calculator Inputs
+        </h2>
         
         <div className="grid gap-4 sm:grid-cols-2 p-4">
           <div>
-            <label htmlFor={charismaInputId} className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={charismaInputId} className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-contrast)' }}>
               Charisma Stat
               <span className="inline-flex items-center ml-1.5 group relative">
                 <FontAwesomeIcon 
                   icon={faCircleInfo}
-                  className="h-4 w-4 text-gray-400 hover:text-gray-500" 
+                  className="h-4 w-4" 
+                  style={{ color: 'var(--secondary-accent)' }}
                   aria-hidden="true"
                 />
                 <span className="sr-only">Valid range information</span>
-                <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10">
+                <div 
+                  className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 text-xs rounded shadow-lg whitespace-nowrap z-10"
+                  style={{ 
+                    backgroundColor: 'var(--dark-contrast)',
+                    color: 'var(--light-contrast)'
+                  }}
+                >
                   Valid range: {formatNumber(1)} - {formatNumber(100)}
                 </div>
               </span>
@@ -251,7 +287,15 @@ export default function CharismaPriceCalc() {
               onChange={handleCharismaChange}
               aria-invalid={!!errors.charisma}
               aria-describedby={`${errors.charisma ? charismaErrorId : ''} charisma-range-desc`}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-3 py-1"
+              className="w-full rounded-md shadow-sm text-base px-3 py-1"
+              style={{ 
+                borderColor: errors.charisma ? 'var(--extra-pop)' : 'var(--secondary-accent)',
+                '&:focus': {
+                  borderColor: 'var(--main-accent)',
+                  outline: 'none',
+                  boxShadow: '0 0 0 2px var(--main-accent)'
+                }
+              }}
             />
             <span id="charisma-range-desc" className="sr-only">
               Valid range is {formatNumber(1)} to {formatNumber(100)}
@@ -259,7 +303,8 @@ export default function CharismaPriceCalc() {
             {errors.charisma && (
               <p 
                 id={charismaErrorId}
-                className="mt-1 text-xs text-red-600" 
+                className="mt-1 text-xs" 
+                style={{ color: 'var(--extra-pop)' }}
                 role="alert"
               >
                 {errors.charisma}
@@ -268,16 +313,23 @@ export default function CharismaPriceCalc() {
           </div>
 
           <div>
-            <label htmlFor={vendorPriceInputId} className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor={vendorPriceInputId} className="block text-sm font-medium mb-1" style={{ color: 'var(--dark-contrast)' }}>
               Vendor Price
               <span className="inline-flex items-center ml-1.5 group relative">
                 <FontAwesomeIcon 
                   icon={faCircleInfo}
-                  className="h-4 w-4 text-gray-400 hover:text-gray-500" 
+                  className="h-4 w-4" 
+                  style={{ color: 'var(--secondary-accent)' }}
                   aria-hidden="true"
                 />
                 <span className="sr-only">Valid range information</span>
-                <div className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 bg-gray-900 text-white text-xs rounded shadow-lg whitespace-nowrap z-10">
+                <div 
+                  className="invisible group-hover:visible absolute left-1/2 -translate-x-1/2 top-full mt-1 px-2 py-1 text-xs rounded shadow-lg whitespace-nowrap z-10"
+                  style={{ 
+                    backgroundColor: 'var(--dark-contrast)',
+                    color: 'var(--light-contrast)'
+                  }}
+                >
                   Valid range: {formatNumber(1)} - {formatNumber(40000)}
                 </div>
               </span>
@@ -289,7 +341,15 @@ export default function CharismaPriceCalc() {
               onChange={handleVendorPriceChange}
               aria-invalid={!!errors.vendorPrice}
               aria-describedby={`${errors.vendorPrice ? vendorPriceErrorId : ''} ${vendorPriceDescId} vendor-range-desc`}
-              className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base px-3 py-1"
+              className="w-full rounded-md shadow-sm text-base px-3 py-1"
+              style={{ 
+                borderColor: errors.vendorPrice ? 'var(--extra-pop)' : 'var(--secondary-accent)',
+                '&:focus': {
+                  borderColor: 'var(--main-accent)',
+                  outline: 'none',
+                  boxShadow: '0 0 0 2px var(--main-accent)'
+                }
+              }}
             />
             <span id="vendor-range-desc" className="sr-only">
               Valid range is {formatNumber(1)} to {formatNumber(40000)}
@@ -297,7 +357,8 @@ export default function CharismaPriceCalc() {
             {errors.vendorPrice && (
               <p 
                 id={vendorPriceErrorId}
-                className="mt-1 text-xs text-red-600" 
+                className="mt-1 text-xs" 
+                style={{ color: 'var(--extra-pop)' }}
                 role="alert"
               >
                 {errors.vendorPrice}
@@ -318,10 +379,23 @@ export default function CharismaPriceCalc() {
       {/* Results section */}
       <section 
         aria-labelledby="results-heading"
-        className="bg-white rounded-b-lg shadow-sm border border-gray-200 overflow-hidden"
+        className="rounded-b-lg shadow-sm border overflow-hidden"
+        style={{ 
+          backgroundColor: 'var(--light-contrast)',
+          borderColor: 'var(--secondary-accent)'
+        }}
         id="price-table"
       >
-        <h2 id="results-heading" className="text-lg font-semibold p-4 border-b border-gray-200">Price Table Results</h2>
+        <h2 
+          id="results-heading" 
+          className="text-lg font-semibold p-4 border-b"
+          style={{ 
+            borderColor: 'var(--secondary-accent)',
+            color: 'var(--dark-contrast)'
+          }}
+        >
+          Price Table Results
+        </h2>
         
         <div 
           className="max-h-[calc(100vh-24rem)] overflow-y-auto" 
@@ -330,7 +404,8 @@ export default function CharismaPriceCalc() {
           aria-label="Scrollable price table"
         >
           <table 
-            className="w-full divide-y divide-gray-200"
+            className="w-full divide-y"
+            style={{ borderColor: 'var(--secondary-accent)' }}
             onKeyDown={handleTableKeyDown}
             role="grid"
             aria-rowcount={priceTable.length}
@@ -342,33 +417,45 @@ export default function CharismaPriceCalc() {
               PageUp and PageDown to move by 10 rows.
             </caption>
             <thead className="sticky top-0 z-10">
-              <tr className="bg-gray-50 shadow-sm">
+              <tr style={{ backgroundColor: 'var(--light-contrast)' }}>
                 <th 
                   scope="col"
-                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-900"
+                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold"
+                  style={{ color: 'var(--dark-contrast)' }}
                 >
                   Charisma
                 </th>
                 <th 
                   scope="col"
-                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold text-gray-900"
+                  className="px-3 sm:px-6 py-3 text-left text-sm font-semibold"
+                  style={{ color: 'var(--dark-contrast)' }}
                 >
                   Buy Price
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y" style={{ borderColor: 'var(--secondary-accent)' }}>
               {priceTable.map((entry, index) => (
                 <tr 
                   key={entry.charisma}
                   data-charisma={entry.charisma}
                   className={`
                     ${Number(charisma) === entry.charisma 
-                      ? "bg-blue-100 border-y border-blue-200" 
-                      : "hover:bg-gray-50"
+                      ? "border-y" 
+                      : ""
                     }
-                    focus:outline-none focus:ring-2 focus:ring-blue-500 focus:relative transition-colors
+                    focus:outline-none focus:ring-2 transition-colors
                   `}
+                  style={{
+                    backgroundColor: Number(charisma) === entry.charisma 
+                      ? 'var(--main-accent)' 
+                      : 'var(--light-contrast)',
+                    borderColor: 'var(--secondary-accent)',
+                    '&:hover': { backgroundColor: 'var(--secondary-accent)' },
+                    '&:focus': { 
+                      ringColor: 'var(--main-accent)',
+                    }
+                  }}
                   tabIndex={Number(charisma) === entry.charisma ? 0 : -1}
                   role="row"
                   aria-selected={Number(charisma) === entry.charisma}
@@ -376,13 +463,15 @@ export default function CharismaPriceCalc() {
                   ref={Number(charisma) === entry.charisma ? highlightedRowRef : null}
                 >
                   <td 
-                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm"
+                    style={{ color: 'var(--dark-contrast)' }}
                     role="gridcell"
                   >
                     {entry.charisma}
                   </td>
                   <td 
-                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm text-gray-900"
+                    className="px-3 sm:px-6 py-2 sm:py-3 text-sm"
+                    style={{ color: 'var(--dark-contrast)' }}
                     role="gridcell"
                   >
                     {entry.buyPrice}
@@ -394,10 +483,14 @@ export default function CharismaPriceCalc() {
         </div>
       </section>
 
-      {/* Back to top link - visible when scrolled */}
+      {/* Back to top link */}
       <a 
         href="#top"
-        className="sr-only focus:not-sr-only focus:fixed focus:bottom-4 focus:right-4 focus:z-50 focus:p-2 focus:bg-white focus:border focus:border-indigo-500"
+        className="sr-only focus:not-sr-only focus:fixed focus:bottom-4 focus:right-4 focus:z-50 focus:p-2"
+        style={{
+          backgroundColor: 'var(--light-contrast)',
+          borderColor: 'var(--main-accent)',
+        }}
       >
         Back to top
       </a>

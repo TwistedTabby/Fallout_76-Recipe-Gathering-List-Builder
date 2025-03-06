@@ -13,3 +13,307 @@ body {
   min-width: 320px;
   min-height: 100vh;
 } 
+
+/* Accessibility improvements for input fields */
+input, textarea, select {
+  border: 2px solid var(--secondary-accent) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+input:focus, textarea:focus, select:focus {
+  outline: none !important;
+  border-color: var(--main-accent) !important;
+  box-shadow: 0 0 0 2px var(--main-accent) !important;
+}
+
+/* Accessibility improvements for buttons */
+button, 
+[role="button"],
+input[type="submit"],
+input[type="button"],
+input[type="reset"],
+label.button {
+  font-weight: 600 !important;
+  transition: all 0.2s ease-in-out !important;
+  border: 2px solid transparent !important;
+}
+
+button:focus, 
+[role="button"]:focus,
+input[type="submit"]:focus,
+input[type="button"]:focus,
+input[type="reset"]:focus,
+label.button:focus {
+  outline: none !important;
+  box-shadow: 0 0 0 3px var(--light-contrast), 0 0 0 5px var(--main-accent) !important;
+}
+
+button:hover, 
+[role="button"]:hover,
+input[type="submit"]:hover,
+input[type="button"]:hover,
+input[type="reset"]:hover,
+label.button:hover {
+  filter: brightness(110%) !important;
+}
+
+/* Ensure text on dark backgrounds has sufficient contrast */
+[style*="background-color: var(--dark-contrast)"] {
+  color: var(--light-contrast) !important;
+}
+
+[style*="background-color: var(--background)"] {
+  color: var(--light-contrast) !important;
+}
+
+/* Ensure text on light backgrounds has sufficient contrast */
+[style*="background-color: var(--light-contrast)"] {
+  color: var(--dark-contrast) !important;
+}
+
+/* Improve contrast for disabled buttons */
+button:disabled,
+[role="button"][aria-disabled="true"] {
+  opacity: 0.6 !important;
+}
+
+/* Action button styles */
+button[style*="background-color: var(--actionPositive)"],
+button[style*="background-color: var(--actionNegative)"] {
+  font-weight: 700 !important;
+  opacity: 1 !important; /* Ensure consistent opacity */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Activate button style */
+button:not([style*="background-color: var(--actionPositive)"]):not([style*="background-color: var(--actionNegative)"]).font-bold {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+button:not([style*="background-color: var(--actionPositive)"]):not([style*="background-color: var(--actionNegative)"]).font-bold:hover {
+  filter: brightness(110%) !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+button[style*="background-color: var(--actionPositive)"]:hover,
+button[style*="background-color: var(--actionNegative)"]:hover {
+  filter: brightness(110%) !important;
+}
+
+button[style*="background-color: var(--actionPositive)"]:focus,
+button[style*="background-color: var(--actionNegative)"]:focus {
+  box-shadow: 0 0 0 3px var(--light-contrast), 0 0 0 5px var(--actionPositive) !important;
+}
+
+button[style*="background-color: var(--actionNegative)"]:focus {
+  box-shadow: 0 0 0 3px var(--light-contrast), 0 0 0 5px var(--actionNegative) !important;
+}
+
+/* Ensure disabled action buttons maintain consistent appearance */
+button[style*="background-color: var(--actionPositive)"]:disabled,
+button[style*="background-color: var(--actionNegative)"]:disabled {
+  opacity: 0.6 !important;
+  cursor: not-allowed !important;
+}
+
+/* Active route styles */
+[style*="background-color: var(--activeHighlight)"] {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+  transition: all 0.2s ease-in-out !important;
+}
+
+/* Active button styles */
+button[style*="background-color: var(--activeButtonBg)"] {
+  font-weight: 700 !important;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* Remove the dot indicators since we're using icons now */
+button[style*="background-color: var(--activeButtonBg)"]:after {
+  content: none;
+}
+
+button.stops-button[style*="background-color: var(--activeButtonBg)"]:after {
+  content: none;
+}
+
+/* Icon styling */
+.svg-inline--fa {
+  vertical-align: -0.125em !important;
+}
+
+/* Clear existing rules that might be conflicting */
+.reorder-button {
+  /* Remove previous rules */
+}
+
+/* Target the exact button classes from the screenshot */
+.px-2.py-1.rounded.text-sm.mr-1.reorder-button,
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button,
+.px-2.py-1.rounded.text-sm.mr-1,
+button.px-2.py-1.rounded.text-sm.mr-1 {
+  position: static !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  width: 36px !important;
+  height: 36px !important;
+  z-index: 1000 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+  margin-right: 4px !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  overflow: visible !important;
+}
+
+/* Target the specific reorder button classes from the screenshot */
+.px-2.py-1.rounded.text-sm.mr-1.reorder-button,
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button {
+  background-color: var(--primary-accent) !important;
+  color: var(--light-contrast) !important;
+}
+
+/* Fix the container of the reorder buttons */
+.flex.items-center.space-x-1,
+div.flex.items-center.space-x-1 {
+  display: inline-flex !important;
+  position: static !important;
+  visibility: visible !important;
+  z-index: 999 !important;
+  overflow: visible !important;
+  min-width: 80px !important;
+  justify-content: flex-end !important;
+}
+
+/* Fix the list items containing the buttons */
+.flex.justify-between.items-center.text-sm,
+li.flex.justify-between.items-center.text-sm {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 1 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Prevent any parent containers from hiding the reordering buttons */
+.farming-tracker ul, 
+.farming-tracker li,
+.farming-tracker div {
+  transform-style: preserve-3d !important;
+}
+
+/* Fix for the specific button classes shown in the screenshot */
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button[aria-label="Move item up"],
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button[aria-label="Move item down"] {
+  position: static !important;
+  display: inline-flex !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+  width: 36px !important;
+  height: 36px !important;
+  margin-right: 4px !important;
+  background-color: var(--primary-accent) !important;
+  color: var(--light-contrast) !important;
+}
+
+/* Wrapper for reorder buttons */
+.reorder-buttons-wrapper {
+  display: inline-flex !important;
+  position: static !important;
+  visibility: visible !important;
+  z-index: 9999 !important;
+  min-width: 80px !important;
+}
+
+/* Remove any transitions that might be causing issues */
+.farming-tracker button,
+.farming-tracker [role="button"] {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Prevent parent containers from hiding the buttons */
+.farming-tracker li,
+.farming-tracker ul,
+.farming-tracker div {
+  overflow: visible !important;
+}
+
+/* Override any existing styles for the reordering buttons */
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button,
+button.px-2.py-1.rounded.text-sm.mr-1 {
+  display: inline-flex !important;
+  position: static !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+  width: 36px !important;
+  height: 36px !important;
+  margin-right: 4px !important;
+  background-color: #3498db !important; /* Bright blue background */
+  color: white !important; /* White text */
+  align-items: center !important;
+  justify-content: center !important;
+  font-weight: bold !important;
+  transform: none !important;
+  transition: none !important;
+  animation: none !important;
+  overflow: visible !important;
+  border: 2px solid #2980b9 !important; /* Darker blue border */
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2) !important; /* Add shadow for depth */
+}
+
+/* Fix for the specific button classes shown in the screenshot */
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button[aria-label="Move item up"],
+button.px-2.py-1.rounded.text-sm.mr-1.reorder-button[aria-label="Move item down"] {
+  display: inline-flex !important;
+  position: static !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  z-index: 9999 !important;
+  background-color: #3498db !important; /* Bright blue background */
+  color: white !important; /* White text */
+}
+
+/* Ensure the parent container doesn't hide the buttons */
+.flex.items-center.space-x-1 {
+  display: inline-flex !important;
+  position: static !important;
+  visibility: visible !important;
+  z-index: 999 !important;
+  overflow: visible !important;
+  min-width: 80px !important;
+  justify-content: flex-end !important;
+}
+
+/* Fix the list items containing the buttons */
+.flex.justify-between.items-center.text-sm {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  position: relative !important;
+  overflow: visible !important;
+  z-index: 1 !important;
+  margin-bottom: 8px !important;
+}
+
+/* Prevent any parent containers from hiding the reordering buttons */
+.farming-tracker ul, 
+.farming-tracker li,
+.farming-tracker div {
+  transform-style: preserve-3d !important;
+  overflow: visible !important;
+}
+
+/* Ensure consistent spacing when buttons are hidden */
+.flex.items-center.space-x-1 div[style*="width: 36px"] {
+  display: inline-block !important;
+  position: static !important;
+  visibility: visible !important;
+} 

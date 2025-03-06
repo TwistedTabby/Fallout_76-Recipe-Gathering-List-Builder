@@ -132,7 +132,7 @@ interface RouteProgress {
   inventoryData?: {
     preRoute?: Record<string, number>; // Maps item names to pre-route inventory counts
     postRoute?: Record<string, number>; // Maps item names to post-route inventory counts
-    routeInventory: Record<string, number>; // Current inventory levels by item name
+    routeInventory?: Record<string, number>; // Current inventory levels by item name
     stops?: Record<string, {
       preStop?: Record<string, number>; // Maps item names to pre-stop inventory counts
       postStop?: Record<string, number>; // Maps item names to post-stop inventory counts
@@ -346,29 +346,37 @@ const FarmingTracker: React.FC = () => {
         const allRoutes = await db.getAll('routes');
         if (allRoutes.length > 0) {
           setRoutes(allRoutes);
-        }
-        
-        // Load current route ID
-        const currentRouteIdObj = await db.get('currentRouteId', 'current');
-        if (currentRouteIdObj) {
-          const route = await db.get('routes', currentRouteIdObj.value);
-          if (route) {
-            setCurrentRoute(route);
-          }
-        }
-        
-        // Load active tracking
-        const activeTrackingObj = await db.get('activeTracking', 'current');
-        if (activeTrackingObj) {
-          // Remove the id property before setting state
-          const { id, ...trackingData } = activeTrackingObj;
-          setActiveTracking(trackingData as RouteProgress);
-          setTrackingNotes(trackingData.notes || '');
           
-          // Make sure the corresponding route is loaded
-          const route = await db.get('routes', trackingData.routeId);
-          if (route) {
-            setCurrentRoute(route);
+          // Load active tracking first
+          // Get all active tracking entries and find the most recent one
+          const activeTrackingEntries = await db.getAll('activeTracking');
+          const activeTrackingObj = activeTrackingEntries.length > 0 ? activeTrackingEntries[0] : null;
+          if (activeTrackingObj) {
+            // Remove the id property before setting state
+            const { id, ...trackingData } = activeTrackingObj;
+            const typedTrackingData = trackingData as RouteProgress;
+            setActiveTracking(typedTrackingData);
+            setTrackingNotes(trackingData.notes || '');
+            
+            // Find and activate the route associated with the tracking session
+            const trackedRoute = allRoutes.find(route => route.id === trackingData.routeId);
+            if (trackedRoute) {
+              setCurrentRoute(trackedRoute);
+            }
+          } else {
+            // If no active tracking, check for current route ID or activate the only route
+            if (allRoutes.length === 1) {
+              // If there's only one route, activate it automatically
+              setCurrentRoute(allRoutes[0]);
+            } else {
+              const currentRouteIdObj = await db.get('currentRouteId', 'current');
+              if (currentRouteIdObj) {
+                const route = await db.get('routes', currentRouteIdObj.value);
+                if (route) {
+                  setCurrentRoute(route);
+                }
+              }
+            }
           }
         }
       } catch (error) {
@@ -381,20 +389,33 @@ const FarmingTracker: React.FC = () => {
             const parsedRoutes = JSON.parse(savedRoutes);
             setRoutes(parsedRoutes);
             
-            const currentRouteId = localStorage.getItem('currentRouteId');
-            if (currentRouteId) {
-              const foundRoute = parsedRoutes.find((route: Route) => route.id === currentRouteId);
-              if (foundRoute) {
-                setCurrentRoute(foundRoute);
+            // Load active tracking first from localStorage
+            const savedTracking = localStorage.getItem('activeTracking');
+            if (savedTracking) {
+              const parsedTracking = JSON.parse(savedTracking);
+              setActiveTracking(parsedTracking);
+              setTrackingNotes(parsedTracking.notes || '');
+              
+              // Find and activate the route associated with the tracking session
+              const trackedRoute = parsedRoutes.find((route: Route) => route.id === parsedTracking.routeId);
+              if (trackedRoute) {
+                setCurrentRoute(trackedRoute);
+              }
+            } else {
+              // If no active tracking, check for current route ID or activate the only route
+              if (parsedRoutes.length === 1) {
+                // If there's only one route, activate it automatically
+                setCurrentRoute(parsedRoutes[0]);
+              } else {
+                const currentRouteId = localStorage.getItem('currentRouteId');
+                if (currentRouteId) {
+                  const foundRoute = parsedRoutes.find((route: Route) => route.id === currentRouteId);
+                  if (foundRoute) {
+                    setCurrentRoute(foundRoute);
+                  }
+                }
               }
             }
-          }
-          
-          const savedTracking = localStorage.getItem('activeTracking');
-          if (savedTracking) {
-            const parsedTracking = JSON.parse(savedTracking);
-            setActiveTracking(parsedTracking);
-            setTrackingNotes(parsedTracking.notes || '');
           }
         } catch (localStorageError) {
           console.error('Error loading from localStorage fallback:', localStorageError);
@@ -434,9 +455,7 @@ const FarmingTracker: React.FC = () => {
         
         // Commit the transaction
         await tx.done;
-        
-        console.log('Routes saved to IndexedDB');
-        
+
         // Also save to localStorage as backup
         localStorage.setItem('farmingRoutes', JSON.stringify(routes));
       } catch (error) {
@@ -488,27 +507,34 @@ const FarmingTracker: React.FC = () => {
 
   // Save active tracking to IndexedDB whenever it changes
   useEffect(() => {
+    let isMounted = true;
+    
     const saveActiveTracking = async () => {
       try {
         const db = await initDB();
+        
+        // Check if component is still mounted before proceeding
+        if (!isMounted) return;
         
         if (activeTracking) {
           // Add the id property for IndexedDB
           await db.put('activeTracking', { ...activeTracking, id: 'current', routeId: activeTracking.routeId });
           localStorage.setItem('activeTracking', JSON.stringify(activeTracking));
         } else {
-          await db.delete('activeTracking', 'current');
-          localStorage.removeItem('activeTracking');
+          // If activeTracking is null, ensure both storages are cleared using our dedicated function
+          await deleteActiveTracking();
         }
       } catch (error) {
         console.error('Error saving active tracking to IndexedDB:', error);
+        
+        if (!isMounted) return;
         
         // Fallback to localStorage
         try {
           if (activeTracking) {
             localStorage.setItem('activeTracking', JSON.stringify(activeTracking));
           } else {
-            localStorage.removeItem('activeTracking');
+            await deleteActiveTracking();
           }
         } catch (localStorageError) {
           console.error('Error saving to localStorage fallback:', localStorageError);
@@ -517,6 +543,11 @@ const FarmingTracker: React.FC = () => {
     };
     
     saveActiveTracking();
+    
+    // Cleanup function to prevent state updates after unmount
+    return () => {
+      isMounted = false;
+    };
   }, [activeTracking]);
 
   // Create a new route
@@ -718,6 +749,14 @@ const FarmingTracker: React.FC = () => {
         setIsReorderingStops(false);
         setIsReorderingItems(false);
       }
+
+      // If the deleted route was being tracked, clear the tracking state
+      if (activeTracking?.routeId === routeId) {
+        setActiveTracking(null);
+        setTrackingNotes('');
+        setInventoryInputMode(null);
+        setInventoryInputValues({});
+      }
       
       // Delete from IndexedDB
       if (isIndexedDBAvailable()) {
@@ -893,6 +932,12 @@ const FarmingTracker: React.FC = () => {
   const startRouteTracking = () => {
     if (!currentRoute) return;
     
+    // Prevent starting a new tracking session if another route is being tracked
+    if (activeTracking && activeTracking.routeId !== currentRoute.id) {
+      showNotification('Cannot start tracking - another route is currently being tracked.', 'error');
+      return;
+    }
+    
     // Initialize tracking with all items marked as not collected
     const collectedItems: Record<string, boolean> = {};
     currentRoute.stops.forEach(stop => {
@@ -910,10 +955,12 @@ const FarmingTracker: React.FC = () => {
       inventoryData: {
         preRoute: {},
         postRoute: {},
-        routeInventory: {}, // Initialize empty route inventory
+        routeInventory: {},
         stops: {}
       }
     };
+    
+    setActiveTracking(newTracking);
     
     // If auto inventory checks are enabled, prompt for pre-route inventory
     if (currentRoute.autoInventoryChecks) {
@@ -938,15 +985,8 @@ const FarmingTracker: React.FC = () => {
       // Only proceed with inventory input if there are harvestable items
       if (Object.keys(initialInventoryValues).length > 0) {
         setInventoryInputValues(initialInventoryValues);
-        setActiveTracking(newTracking);
         setInventoryInputMode('pre');
-      } else {
-        // No harvestable items, just start tracking
-        setActiveTracking(newTracking);
       }
-    } else {
-      // Start tracking without inventory checks
-      setActiveTracking(newTracking);
     }
     
     // Check if the first stop needs inventory data collection
@@ -962,7 +1002,7 @@ const FarmingTracker: React.FC = () => {
           if (!itemsByName[item.name]) {
             itemsByName[item.name] = [];
             // Get the current known inventory level for this item
-            const currentLevel = activeTracking?.inventoryData?.routeInventory?.[item.name] || 0;
+            const currentLevel = newTracking.inventoryData?.routeInventory?.[item.name] || 0;
             initialInventoryValues[item.name] = currentLevel;
           }
           itemsByName[item.name].push(item);
@@ -1182,106 +1222,121 @@ const FarmingTracker: React.FC = () => {
       updatedTracking.inventoryData = {
         routeInventory: { ...inventoryInputValues },
         preRoute: inventoryInputValues,
-        postRoute: updatedTracking.inventoryData.postRoute,
-        stops: updatedTracking.inventoryData.stops
+        postRoute: updatedTracking.inventoryData?.postRoute || {},
+        stops: updatedTracking.inventoryData?.stops || {}
       };
     } else if (inventoryInputMode === 'post') {
       // Save post-route inventory data - using item names
       updatedTracking.inventoryData = {
-        routeInventory: updatedTracking.inventoryData.routeInventory,
-        preRoute: updatedTracking.inventoryData.preRoute,
+        routeInventory: updatedTracking.inventoryData?.routeInventory || {},
+        preRoute: updatedTracking.inventoryData?.preRoute || {},
         postRoute: inventoryInputValues,
-        stops: updatedTracking.inventoryData.stops
+        stops: updatedTracking.inventoryData?.stops || {}
       };
     } else if (inventoryInputMode === 'pre-stop' && currentStopId) {
       // For stop-specific tracking, we need to map between names and UUIDs
-      const currentStop = currentRoute.stops.find(stop => stop.id === currentStopId);
-      if (!currentStop) return;
-
-      // Create a mapping of item names to their UUIDs for this stop
-      const nameToUUIDMap: Record<string, string[]> = {};
-      currentStop.items.forEach(item => {
-        if (item.type === 'Harvestable') {
-          if (!nameToUUIDMap[item.name]) {
-            nameToUUIDMap[item.name] = [];
-          }
-          nameToUUIDMap[item.name].push(item.id);
-        }
-      });
-
-      // Convert name-based input values to UUID-based values
       const uuidBasedValues: Record<string, number> = {};
-      Object.entries(inventoryInputValues).forEach(([itemName, value]) => {
-        const uuids = nameToUUIDMap[itemName] || [];
-        uuids.forEach(uuid => {
-          uuidBasedValues[uuid] = value;
+      const addedAmounts: Record<string, number> = {};
+
+      // Get the current stop
+      const currentStop = currentRoute.stops.find(stop => stop.id === currentStopId);
+      if (currentStop) {
+        // Group items by name
+        const itemsByName: Record<string, Item[]> = {};
+        currentStop.items.forEach(item => {
+          if (item.type === 'Harvestable') {
+            if (!itemsByName[item.name]) {
+              itemsByName[item.name] = [];
+            }
+            itemsByName[item.name].push(item);
+          }
         });
-      });
+
+        // For each item name in the input values
+        Object.entries(inventoryInputValues).forEach(([itemName, value]) => {
+          const items = itemsByName[itemName] || [];
+          if (items.length > 0) {
+            // Distribute the value equally among all UUIDs for this item name
+            const valuePerUUID = value / items.length;
+            items.forEach(item => {
+              uuidBasedValues[item.id] = valuePerUUID;
+            });
+          }
+        });
+      }
 
       // Save pre-stop inventory data with UUID-based values
+      const currentStopData = updatedTracking.inventoryData?.stops?.[currentStopId] || {};
       updatedTracking.inventoryData = {
-        routeInventory: updatedTracking.inventoryData.routeInventory,
-        preRoute: updatedTracking.inventoryData.preRoute,
-        postRoute: updatedTracking.inventoryData.postRoute,
+        routeInventory: updatedTracking.inventoryData?.routeInventory || {},
+        preRoute: updatedTracking.inventoryData?.preRoute || {},
+        postRoute: updatedTracking.inventoryData?.postRoute || {},
         stops: {
-          ...updatedTracking.inventoryData.stops,
+          ...updatedTracking.inventoryData?.stops,
           [currentStopId]: {
-            ...updatedTracking.inventoryData.stops[currentStopId],
+            ...currentStopData,
             preStop: uuidBasedValues
           }
         }
       };
     } else if (inventoryInputMode === 'post-stop' && currentStopId) {
-      const currentStop = currentRoute.stops.find(stop => stop.id === currentStopId);
-      if (!currentStop) return;
-
-      // Create a mapping of item names to their UUIDs for this stop
-      const nameToUUIDMap: Record<string, string[]> = {};
-      currentStop.items.forEach(item => {
-        if (item.type === 'Harvestable') {
-          if (!nameToUUIDMap[item.name]) {
-            nameToUUIDMap[item.name] = [];
-          }
-          nameToUUIDMap[item.name].push(item.id);
-        }
-      });
-
-      // Convert name-based input values to UUID-based values
+      // Similar to pre-stop, but for post-stop values
       const uuidBasedValues: Record<string, number> = {};
       const addedAmounts: Record<string, number> = {};
 
-      Object.entries(inventoryInputValues).forEach(([itemName, postValue]) => {
-        const uuids = nameToUUIDMap[itemName] || [];
-        const preStopValues = updatedTracking.inventoryData?.stops?.[currentStopId]?.preStop || {};
-        
-        // Calculate the total added amount for this item name
-        let totalPreValue = 0;
-        uuids.forEach(uuid => {
-          totalPreValue += preStopValues[uuid] || 0;
+      // Get the current stop
+      const currentStop = currentRoute.stops.find(stop => stop.id === currentStopId);
+      if (currentStop) {
+        // Group items by name
+        const itemsByName: Record<string, Item[]> = {};
+        currentStop.items.forEach(item => {
+          if (item.type === 'Harvestable') {
+            if (!itemsByName[item.name]) {
+              itemsByName[item.name] = [];
+            }
+            itemsByName[item.name].push(item);
+          }
         });
-        
-        const addedAmount = Math.max(0, postValue - (totalPreValue / uuids.length));
-        addedAmounts[itemName] = addedAmount;
 
-        // Update route inventory with the added amount
-        if (updatedTracking.inventoryData) {
-          updatedTracking.inventoryData.routeInventory[itemName] = 
-            (updatedTracking.inventoryData.routeInventory[itemName] || 0) + addedAmount;
-        }
+        // For each item name in the input values
+        Object.entries(inventoryInputValues).forEach(([itemName, value]) => {
+          const items = itemsByName[itemName] || [];
+          if (items.length > 0) {
+            // Get the pre-stop value for this item name
+            const preStopTotal = items.reduce((sum, item) => {
+              return sum + (updatedTracking.inventoryData?.stops?.[currentStopId]?.preStop?.[item.id] || 0);
+            }, 0);
 
-        // Distribute the post-value equally among all UUIDs for this item name
-        uuids.forEach(uuid => {
-          uuidBasedValues[uuid] = postValue;
+            // Calculate the added amount
+            const addedAmount = value - preStopTotal;
+            addedAmounts[itemName] = addedAmount;
+
+            // Update route inventory with the added amount
+            const currentInventory = updatedTracking.inventoryData?.routeInventory?.[itemName] || 0;
+            if (updatedTracking.inventoryData) {
+              updatedTracking.inventoryData.routeInventory = {
+                ...updatedTracking.inventoryData.routeInventory,
+                [itemName]: currentInventory + addedAmount
+              };
+            }
+
+            // Distribute the post-value equally among all UUIDs for this item name
+            const valuePerUUID = value / items.length;
+            items.forEach(item => {
+              uuidBasedValues[item.id] = valuePerUUID;
+            });
+          }
         });
-      });
+      }
 
       // Save post-stop inventory data with UUID-based values
+      const currentStopData = updatedTracking.inventoryData?.stops?.[currentStopId] || {};
       updatedTracking.inventoryData = {
         ...updatedTracking.inventoryData,
         stops: {
-          ...updatedTracking.inventoryData.stops,
+          ...updatedTracking.inventoryData?.stops,
           [currentStopId]: {
-            ...updatedTracking.inventoryData.stops[currentStopId],
+            ...currentStopData,
             postStop: uuidBasedValues,
             addedAmount: addedAmounts
           }
@@ -1292,29 +1347,7 @@ const FarmingTracker: React.FC = () => {
     setActiveTracking(updatedTracking);
     setInventoryInputMode(null);
     setInventoryInputValues({});
-    
-    // Save to IndexedDB
-    try {
-      const db = await initDB();
-      await db.put('activeTracking', { ...updatedTracking, id: 'current' });
-      
-      // Update itemInventory store with the latest values - using item names
-      const routeInventory = updatedTracking.inventoryData?.routeInventory;
-      if (routeInventory) {
-        for (const [itemName, amount] of Object.entries(routeInventory)) {
-          await db.put('itemInventory', {
-            name: itemName,
-            currentAmount: amount,
-            lastUpdated: Date.now()
-          });
-        }
-      }
-      
-      showNotification('Inventory data saved successfully!', 'success');
-    } catch (error) {
-      console.error('Error saving inventory data:', error);
-      showNotification('Failed to save inventory data.', 'error');
-    }
+    setCurrentStopId(null);
   };
 
   // Function to save the updated route
@@ -1402,31 +1435,71 @@ const FarmingTracker: React.FC = () => {
     showNotification('Route tracking completed!', 'success');
   };
 
+  // Function to delete active tracking from storage
+  const deleteActiveTracking = async (): Promise<boolean> => {
+    try {
+      if (isIndexedDBAvailable()) {
+        const db = await openDB<FarmingTrackerDB>('farming-tracker-db', 1);
+        // Delete all active tracking entries to ensure cleanup
+        const activeTrackingEntries = await db.getAll('activeTracking');
+        const tx = db.transaction('activeTracking', 'readwrite');
+        for (const entry of activeTrackingEntries) {
+          if (entry.id) {
+            await tx.store.delete(entry.id);
+          }
+        }
+        await tx.done;
+      }
+      // Always clear localStorage
+      localStorage.removeItem('activeTracking');
+      return true;
+    } catch (err) {
+      console.error('Error deleting active tracking:', err);
+      return false;
+    }
+  };
+
   // Cancel the route tracking
   const cancelRouteTracking = async () => {
     // Ask for confirmation before canceling
     const confirmed = await customConfirm('Are you sure you want to cancel route tracking? All progress will be lost.');
     if (!confirmed) return;
     
-    setActiveTracking(null);
-    setTrackingNotes('');
-    setIsReorderingMode(false);
-    setIsReorderingStops(false);
-    setIsReorderingItems(false);
-    setInventoryInputMode(null);
-    setInventoryInputValues({});
-    
-    // Delete from IndexedDB
-    if (isIndexedDBAvailable()) {
-      openDB<FarmingTrackerDB>('farming-tracker-db', 1).then(db => {
-        db.getAll('activeTracking').then(trackings => {
-          trackings.forEach(tracking => {
-            db.delete('activeTracking', tracking.id || '');
-          });
-        });
-      }).catch(err => {
-        console.error('Error clearing active tracking:', err);
-      });
+    try {
+      // First clear the state to prevent any auto-save effects
+      setActiveTracking(null);
+      setTrackingNotes('');
+      setIsReorderingMode(false);
+      setIsReorderingStops(false);
+      setIsReorderingItems(false);
+      setInventoryInputMode(null);
+      setInventoryInputValues({});
+
+      // Then explicitly clear from storage
+      if (isIndexedDBAvailable()) {
+        const db = await openDB<FarmingTrackerDB>('farming-tracker-db', 1);
+        
+        // Start a transaction and clear all active tracking entries
+        const tx = db.transaction('activeTracking', 'readwrite');
+        const store = tx.objectStore('activeTracking');
+        
+        // Get all keys and delete them
+        const keys = await store.getAllKeys();
+        for (const key of keys) {
+          await store.delete(key);
+        }
+        
+        // Wait for transaction to complete
+        await tx.done;
+      }
+
+      // Clear from localStorage regardless of IndexedDB availability
+      localStorage.removeItem('activeTracking');
+      
+      showNotification('Route tracking cancelled successfully', 'success');
+    } catch (err) {
+      console.error('Error clearing active tracking:', err);
+      showNotification('Error clearing tracking data', 'error');
     }
   };
 
@@ -2364,24 +2437,24 @@ const FarmingTracker: React.FC = () => {
             {/* Calculate total items and collected items */}
             {(() => {
               let totalItems = 0;
-              let collectedItems = 0;
+              let collectedItemCount = 0;
               
               currentRoute.stops.forEach(stop => {
                 stop.items.forEach(item => {
                   totalItems++;
                   if (activeTracking.collectedItems[item.id]) {
-                    collectedItems++;
+                    collectedItemCount++;
                   }
                 });
               });
               
-              const progressPercentage = totalItems > 0 ? Math.round((collectedItems / totalItems) * 100) : 0;
+              const progressPercentage = totalItems > 0 ? Math.round((collectedItemCount / totalItems) * 100) : 0;
               
               return (
                 <div>
                   <div className="flex justify-between mb-1">
                     <span>Items Collected:</span>
-                    <span>{collectedItems} / {totalItems} ({progressPercentage}%)</span>
+                    <span>{collectedItemCount} / {totalItems} ({progressPercentage}%)</span>
                   </div>
                   <div className="w-full bg-gray-300 rounded-full h-2.5 mb-4">
                     <div 
@@ -2481,6 +2554,48 @@ const FarmingTracker: React.FC = () => {
             {routes.length > 0 && (
               <div className="mb-6">
                 <h3 className="text-lg font-medium mb-2">Your Routes</h3>
+                
+                {/* Active Tracking Warning */}
+                {activeTracking && currentRoute?.id !== activeTracking.routeId && (
+                  <div className="mb-4 p-4 rounded-lg" style={{ backgroundColor: 'var(--main-accent)', color: 'var(--light-contrast)' }}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <h4 className="font-bold mb-1">Active Tracking Session</h4>
+                        <p className="text-sm">
+                          There is an active tracking session for route: {routes.find(r => r.id === activeTracking.routeId)?.name}
+                        </p>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => {
+                            const route = routes.find(r => r.id === activeTracking.routeId);
+                            if (route) {
+                              handleRouteActivation(route);
+                            }
+                          }}
+                          className="px-3 py-1 rounded text-sm font-bold"
+                          style={{ 
+                            backgroundColor: 'var(--actionPositive)', 
+                            color: 'var(--actionText)' 
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faPlay} className="mr-1" /> Resume
+                        </button>
+                        <button
+                          onClick={cancelRouteTracking}
+                          className="px-3 py-1 rounded text-sm font-bold"
+                          style={{ 
+                            backgroundColor: 'var(--actionNegative)', 
+                            color: 'var(--actionText)' 
+                          }}
+                        >
+                          <FontAwesomeIcon icon={faTimes} className="mr-1" /> Clear
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <ul className="space-y-4">
                   {routes.map(route => (
                     <li 
@@ -2525,6 +2640,63 @@ const FarmingTracker: React.FC = () => {
                                 <FontAwesomeIcon icon={faList} className="mr-1" /> Stops
                               </button>
 
+                              {/* Start/Resume and Clear Session buttons */}
+                              <div className="flex gap-2">
+                                {!activeTracking && (
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      startRouteTracking();
+                                    }}
+                                    className="px-3 py-2 rounded text-sm min-w-[80px] flex items-center justify-center"
+                                    style={{ 
+                                      backgroundColor: 'var(--actionPositive)', 
+                                      color: 'var(--actionText)',
+                                      fontWeight: 'bold'
+                                    }}
+                                  >
+                                    <FontAwesomeIcon icon={faPlay} className="mr-1" /> Start
+                                  </button>
+                                )}
+                                {activeTracking && activeTracking.routeId === route.id && (
+                                  <div className="flex gap-2">
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        handleRouteActivation(route);
+                                      }}
+                                      className="px-3 py-2 rounded text-sm min-w-[80px] flex items-center justify-center"
+                                      style={{ 
+                                        backgroundColor: 'var(--actionPositive)', 
+                                        color: 'var(--actionText)',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      <FontAwesomeIcon icon={faPlay} className="mr-1" /> Resume
+                                    </button>
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        cancelRouteTracking();
+                                      }}
+                                      className="px-3 py-2 rounded text-sm min-w-[80px] flex items-center justify-center"
+                                      style={{ 
+                                        backgroundColor: 'var(--actionNegative)', 
+                                        color: 'var(--actionText)',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      <FontAwesomeIcon icon={faTimes} className="mr-1" /> Clear
+                                    </button>
+                                  </div>
+                                )}
+                                {activeTracking && activeTracking.routeId !== route.id && (
+                                  <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
+                                    Another route is active
+                                  </div>
+                                )}
+                              </div>
+
                               <button
                                 onClick={(e) => {
                                   e.stopPropagation();
@@ -2557,7 +2729,7 @@ const FarmingTracker: React.FC = () => {
                                 color: 'var(--light-contrast)'
                               }}
                             >
-                              <FontAwesomeIcon icon={faEdit} className="mr-1" /> Edit
+                              <FontAwesomeIcon icon={faEdit} className="mr-1" /> Activate
                             </button>
                           )}
                         </div>

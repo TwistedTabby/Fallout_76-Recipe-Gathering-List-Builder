@@ -2129,32 +2129,34 @@ const FarmingTracker: React.FC = () => {
                       itemsByName[item.name].push(item);
                     });
                     
-                    // Create a list of unique items by name
-                    return Object.entries(itemsByName).map(([name]) => {
-                      return (
-                        <div key={name} className="space-x-2 flex items-center">
-                          <input
-                            type="number"
-                            min="0"
-                            value={inventoryInputValues[name] || 0}
-                            onChange={(e) => {
-                              const newValue = Math.max(0, parseInt(e.target.value) || 0);
-                              setInventoryInputValues(prev => ({
-                                ...prev,
-                                [name]: newValue
-                              }));
-                            }}
-                            className="ml-2 p-1 w-20 text-right rounded"
-                            style={{ 
-                              backgroundColor: 'var(--light-contrast)', 
-                              color: 'var(--dark-contrast)', 
-                              border: '1px solid var(--secondary-accent)' 
-                            }}
-                          />
-                          <label className="flex-grow">{name}:</label>
-                        </div>
-                      );
-                    });
+                    // Create a list of unique items by name and sort them alphabetically
+                    return Object.entries(itemsByName)
+                      .sort(([nameA], [nameB]) => nameA.localeCompare(nameB))
+                      .map(([name]) => {
+                        return (
+                          <div key={name} className="space-x-2 flex items-center">
+                            <input
+                              type="number"
+                              min="0"
+                              value={inventoryInputValues[name] || 0}
+                              onChange={(e) => {
+                                const newValue = Math.max(0, parseInt(e.target.value) || 0);
+                                setInventoryInputValues(prev => ({
+                                  ...prev,
+                                  [name]: newValue
+                                }));
+                              }}
+                              className="ml-2 p-1 w-20 text-right rounded"
+                              style={{ 
+                                backgroundColor: 'var(--light-contrast)', 
+                                color: 'var(--dark-contrast)', 
+                                border: '1px solid var(--secondary-accent)' 
+                              }}
+                            />
+                            <label className="flex-grow">{name}:</label>
+                          </div>
+                        );
+                      });
                   })()
                 ) :
                   <p>No harvestable items found in this route.</p>

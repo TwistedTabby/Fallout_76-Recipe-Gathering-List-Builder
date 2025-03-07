@@ -201,6 +201,28 @@ const Layout = ({ children, title }: LayoutProps) => {
 
             {/* Right side content */}
             <div className="hidden sm:flex items-center">
+              <span className="mr-2" style={{ color: 'var(--dark-contrast)' }}>Color Scheme</span>
+              <select
+                value={currentScheme}
+                onChange={(e) => setCurrentScheme(e.target.value as ColorSchemeName)}
+                className="rounded py-1 px-2"
+                style={{
+                  backgroundColor: 'var(--light-contrast)',
+                  color: 'var(--dark-contrast)',
+                  border: '2px solid var(--secondary-accent)',
+                  fontWeight: 'medium'
+                }}
+                aria-label="Select color theme"
+              >
+                {Object.entries(availableSchemes).map(([schemeName, scheme]) => (
+                  <option key={schemeName} value={schemeName}>
+                    {scheme.themeName}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="sm:hidden flex flex-col items-center">
+              <span className="mb-1" style={{ color: 'var(--dark-contrast)' }}>Color Scheme</span>
               <select
                 value={currentScheme}
                 onChange={(e) => setCurrentScheme(e.target.value as ColorSchemeName)}

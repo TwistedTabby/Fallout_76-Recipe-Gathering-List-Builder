@@ -877,6 +877,26 @@ const FarmingTracker: React.FC = () => {
   // Toggle reordering mode
   const toggleReorderingMode = () => {
     setIsReorderingMode(prev => !prev);
+    
+    // If we're entering reordering mode, ensure buttons are visible after render
+    if (!isReorderingMode) {
+      setTimeout(() => {
+        // Force a repaint to ensure buttons are visible
+        const reorderButtons = document.querySelectorAll('.reorder-button');
+        reorderButtons.forEach(button => {
+          if (button instanceof HTMLElement) {
+            button.style.display = 'inline-flex';
+            button.style.visibility = 'visible';
+            button.style.opacity = '1';
+            button.style.position = 'relative';
+            button.style.zIndex = '1000';
+          }
+        });
+        
+        // Force a resize event to trigger any responsive layout adjustments
+        window.dispatchEvent(new Event('resize'));
+      }, 100);
+    }
   };
 
   // Toggle reordering items mode
@@ -898,12 +918,8 @@ const FarmingTracker: React.FC = () => {
             button.style.display = 'inline-flex';
             button.style.visibility = 'visible';
             button.style.opacity = '1';
-            button.style.position = 'static';
-            button.style.zIndex = '9999';
-            button.style.backgroundColor = '#3498db'; // Bright blue background
-            button.style.color = 'white'; // White text
-            button.style.border = '2px solid #2980b9'; // Darker blue border
-            button.style.boxShadow = '0 2px 4px rgba(0, 0, 0, 0.2)'; // Add shadow for depth
+            button.style.position = 'relative';
+            button.style.zIndex = '1000';
           }
         });
         
@@ -3024,7 +3040,11 @@ const FarmingTracker: React.FC = () => {
                   ) : (
                     <div 
                       className="space-y-4 overflow-y-auto"
-                      style={{ maxHeight: isReorderingMode ? '400px' : 'none' }}
+                      style={{ 
+                        maxHeight: isReorderingMode ? '60vh' : 'none',
+                        overflowX: 'visible',
+                        paddingRight: '10px'
+                      }}
                     >
                       {isReorderingMode ? (
                         // Reordering mode view
@@ -3035,7 +3055,9 @@ const FarmingTracker: React.FC = () => {
                             style={{ 
                               backgroundColor: 'var(--light-contrast)', 
                               border: '1px solid var(--secondary-accent)',
-                              cursor: 'grab'
+                              cursor: 'grab',
+                              position: 'relative',
+                              zIndex: 1
                             }}
                           >
                             <div className="flex-grow">
@@ -3047,15 +3069,16 @@ const FarmingTracker: React.FC = () => {
                                 {stop.items.length} items
                               </div>
                             </div>
-                            <div className="flex flex-col space-y-1">
+                            <div className="flex flex-col space-y-1" style={{ zIndex: 2, position: 'relative' }}>
                               <button
                                 onClick={() => index > 0 && reorderStops(index, index - 1)}
                                 disabled={index === 0}
-                                className="px-2 py-1 rounded text-sm"
+                                className="px-2 py-1 rounded text-sm reorder-button"
                                 style={{ 
                                   backgroundColor: index === 0 ? 'var(--secondary-accent-muted)' : 'var(--secondary-accent)', 
                                   color: 'var(--light-contrast)',
-                                  opacity: index === 0 ? 0.5 : 1
+                                  opacity: index === 0 ? 0.5 : 1,
+                                  minWidth: '36px'
                                 }}
                               >
                                 ↑
@@ -3063,11 +3086,12 @@ const FarmingTracker: React.FC = () => {
                               <button
                                 onClick={() => index < currentRoute.stops.length - 1 && reorderStops(index, index + 1)}
                                 disabled={index === currentRoute.stops.length - 1}
-                                className="px-2 py-1 rounded text-sm"
+                                className="px-2 py-1 rounded text-sm reorder-button"
                                 style={{ 
                                   backgroundColor: index === currentRoute.stops.length - 1 ? 'var(--secondary-accent-muted)' : 'var(--secondary-accent)', 
                                   color: 'var(--light-contrast)',
-                                  opacity: index === currentRoute.stops.length - 1 ? 0.5 : 1
+                                  opacity: index === currentRoute.stops.length - 1 ? 0.5 : 1,
+                                  minWidth: '36px'
                                 }}
                               >
                                 ↓

@@ -191,13 +191,42 @@ div.flex.items-center.space-x-1 {
 /* Fix the list items containing the buttons */
 .flex.justify-between.items-center.text-sm,
 li.flex.justify-between.items-center.text-sm {
-  display: flex !important;
-  justify-content: space-between !important;
-  align-items: center !important;
   position: relative !important;
-  overflow: visible !important;
   z-index: 1 !important;
-  margin-bottom: 8px !important;
+}
+
+/* Ensure reordering buttons are always visible */
+.reorder-button {
+  position: relative !important;
+  z-index: 1000 !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-width: 36px !important;
+  min-height: 36px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* Fix for stops reordering container */
+div.space-y-4.overflow-y-auto {
+  overflow-x: visible !important;
+  position: relative !important;
+  z-index: 1 !important;
+}
+
+/* Ensure the reordering buttons container is always visible */
+div.flex.flex-col.space-y-1 {
+  position: relative !important;
+  z-index: 1000 !important;
+  visibility: visible !important;
+  display: flex !important;
+}
+
+/* Ensure the stop container doesn't hide the buttons */
+div.p-3.rounded-lg.flex.items-center {
+  overflow: visible !important;
+  position: relative !important;
 }
 
 /* Prevent any parent containers from hiding the reordering buttons */

@@ -143,6 +143,37 @@ const DEFAULT_ITEM_TYPES = [
   'Task'
 ];
 
+// Item type rules
+const ITEM_TYPES_REQUIRING_NAME = ['Event', 'Task', 'Harvestable', 'Consumable'];
+const ITEM_TYPES_WITH_DEFAULT_NAME = ['Bobblehead', 'Magazine'];
+
+// Utility functions for item type rules
+const requiresCustomName = (itemType: string): boolean => {
+  return ITEM_TYPES_REQUIRING_NAME.includes(itemType);
+};
+
+const usesDefaultName = (itemType: string): boolean => {
+  return ITEM_TYPES_WITH_DEFAULT_NAME.includes(itemType);
+};
+
+const getItemNameOrDefault = (itemName: string, itemType: string): string => {
+  // If the item type uses a default name (like Bobblehead or Magazine), return the type as the name
+  if (usesDefaultName(itemType)) {
+    return itemType;
+  }
+  // Otherwise, return the provided name or the type as fallback
+  return itemName.trim() || itemType;
+};
+
+const validateItemName = (itemName: string, itemType: string): boolean => {
+  // If the item type requires a custom name, make sure one is provided
+  if (requiresCustomName(itemType)) {
+    return !!itemName.trim();
+  }
+  // For types that use default names, no validation needed
+  return true;
+};
+
 const FarmingTracker: React.FC = () => {
   // Add a ref for the focus recovery button
   const focusRecoveryRef = useRef<HTMLButtonElement>(null);
@@ -181,6 +212,13 @@ const FarmingTracker: React.FC = () => {
   const [editStopName, setEditStopName] = useState('');
   const [editStopDescription, setEditStopDescription] = useState('');
   const [editStopCollectData, setEditStopCollectData] = useState(false);
+  
+  // Item editing state
+  const [isEditingItem, setIsEditingItem] = useState<{stopId: string, itemId: string} | null>(null);
+  const [editItemName, setEditItemName] = useState('');
+  const [editItemType, setEditItemType] = useState('');
+  const [editItemDescription, setEditItemDescription] = useState('');
+  const [editItemQuantity, setEditItemQuantity] = useState(1);
 
   // Tracking state
   const [activeTracking, setActiveTracking] = useState<RouteProgress | null>(null);
@@ -583,19 +621,18 @@ const FarmingTracker: React.FC = () => {
 
   // Add an item to a stop
   const addItemToStop = (stopId: string) => {
-    // Only require item name for Event, Task, Harvestable, and Consumable types
+    // Get the item name and description from state
     const itemName = newItemNames[stopId] || '';
     const description = newItemDescriptions[stopId] || '';
     
-    // For Event, Task, Harvestable, and Consumable, require a name
-    if (!currentRoute || ((newItemType === 'Event' || newItemType === 'Task' || 
-                          newItemType === 'Harvestable' || newItemType === 'Consumable') && !itemName.trim())) {
-      showNotification('Please provide a name for the ' + newItemType, 'error');
+    // Validate the item name based on type
+    if (!currentRoute || !validateItemName(itemName, newItemType)) {
+      showNotification(`Please provide a name for the ${newItemType}`, 'error');
       return;
     }
     
-    // Generate a default name based on type if not provided
-    const finalItemName = itemName.trim() || newItemType;
+    // Get the final item name based on type rules
+    const finalItemName = getItemNameOrDefault(itemName, newItemType);
     
     const newItem: Item = {
       id: uuidv4(),
@@ -1872,6 +1909,9 @@ const FarmingTracker: React.FC = () => {
   const editStop = (stopId: string) => {
     if (!currentRoute) return;
     
+    // Close any item editing form
+    cancelEditItem();
+    
     const stop = currentRoute.stops.find(s => s.id === stopId);
     if (!stop) return;
     
@@ -1917,7 +1957,98 @@ const FarmingTracker: React.FC = () => {
 
   // Handle key press for stop editing
   const handleStopEditKeyPress = (e: React.KeyboardEvent) => {
-    handleKeyPress(e, saveEditedStop);
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveEditedStop();
+    } else if (e.key === 'Escape') {
+      cancelEditStop();
+    }
+  };
+
+  // Edit an item in a stop
+  const editItem = (stopId: string, itemId: string) => {
+    if (!currentRoute) return;
+    
+    // Close any stop editing form
+    cancelEditStop();
+    
+    const stop = currentRoute.stops.find(s => s.id === stopId);
+    if (!stop) return;
+    
+    const item = stop.items.find(i => i.id === itemId);
+    if (!item) return;
+    
+    setIsEditingItem({ stopId, itemId });
+    
+    // For Bobblehead and Magazine, we don't need to set the name as it's the same as the type
+    // For other types, set the name from the item
+    setEditItemName(item.name);
+    setEditItemType(item.type);
+    setEditItemDescription(item.description || '');
+    setEditItemQuantity(item.quantity);
+  };
+
+  // Save edited item
+  const saveEditedItem = () => {
+    if (!currentRoute || !isEditingItem) return;
+    
+    // Validate the item name based on type
+    if (!validateItemName(editItemName, editItemType)) {
+      showNotification(`Please provide a name for the ${editItemType}`, 'error');
+      return;
+    }
+    
+    // Get the final item name based on type rules
+    const finalItemName = getItemNameOrDefault(editItemName, editItemType);
+    
+    const updatedStops = currentRoute.stops.map(stop => {
+      if (stop.id === isEditingItem.stopId) {
+        return {
+          ...stop,
+          items: stop.items.map(item => {
+            if (item.id === isEditingItem.itemId) {
+              return {
+                ...item,
+                name: finalItemName,
+                type: editItemType,
+                description: editItemDescription,
+                quantity: editItemType === 'Consumable' ? editItemQuantity : 1
+              };
+            }
+            return item;
+          })
+        };
+      }
+      return stop;
+    });
+    
+    const updatedRoute = {
+      ...currentRoute,
+      stops: updatedStops
+    };
+    
+    setCurrentRoute(updatedRoute);
+    updateRouteInList(updatedRoute);
+    cancelEditItem();
+  };
+
+  // Cancel item editing
+  const cancelEditItem = () => {
+    setIsEditingItem(null);
+    setEditItemName('');
+    setEditItemType('');
+    setEditItemDescription('');
+    setEditItemQuantity(1);
+  };
+
+  // Handle key press in item edit form
+  const handleItemEditKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      saveEditedItem();
+    } else if (e.key === 'Escape') {
+      cancelEditItem();
+    }
   };
 
   return (
@@ -3248,7 +3379,7 @@ const FarmingTracker: React.FC = () => {
                                       zIndex: 1
                                     }}>
                                       <span style={{ maxWidth: '60%', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                        {(item.type === 'Bobblehead' || item.type === 'Magazine') ? (
+                                        {usesDefaultName(item.type) ? (
                                           <>
                                             <span className="font-medium">{item.type}</span>
                                             {item.description && (
@@ -3345,33 +3476,165 @@ const FarmingTracker: React.FC = () => {
                                             )}
                                           </>
                                         ) : (
-                                          <button
-                                            onClick={() => {
-                                              deleteItem(stop.id, item.id).catch(err => {
-                                                console.error('Error deleting item:', err);
-                                                showNotification('Failed to delete item.', 'error');
-                                              });
-                                            }}
-                                            className="px-2 py-1 rounded text-sm"
-                                            style={{ 
-                                              backgroundColor: 'var(--extra-pop)', 
-                                              color: 'var(--light-contrast)',
-                                              width: '36px',
-                                              height: '36px',
-                                              display: 'flex',
-                                              alignItems: 'center',
-                                              justifyContent: 'center'
-                                            }}
-                                            aria-label={`Remove ${item.name}`}
-                                          >
-                                            <FontAwesomeIcon icon={faTrash} />
-                                            <span className="sr-only">Remove</span>
-                                          </button>
+                                          <div className="flex space-x-1">
+                                            <button
+                                              onClick={() => {
+                                                deleteItem(stop.id, item.id).catch(err => {
+                                                  console.error('Error deleting item:', err);
+                                                  showNotification('Failed to delete item.', 'error');
+                                                });
+                                              }}
+                                              className="px-2 py-1 rounded text-sm"
+                                              style={{ 
+                                                backgroundColor: 'var(--extra-pop)', 
+                                                color: 'var(--light-contrast)',
+                                                width: '36px',
+                                                height: '36px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                              }}
+                                              aria-label={`Remove ${item.name}`}
+                                            >
+                                              <FontAwesomeIcon icon={faTrash} />
+                                              <span className="sr-only">Remove</span>
+                                            </button>
+                                            <button
+                                              onClick={() => editItem(stop.id, item.id)}
+                                              className="px-2 py-1 rounded text-sm"
+                                              style={{ 
+                                                backgroundColor: 'var(--main-accent)', 
+                                                color: 'var(--dark-contrast)',
+                                                width: '36px',
+                                                height: '36px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                              }}
+                                              aria-label={`Edit ${item.name}`}
+                                            >
+                                              <FontAwesomeIcon icon={faEdit} />
+                                              <span className="sr-only">Edit</span>
+                                            </button>
+                                          </div>
                                         )}
                                       </div>
                                     </li>
                                   ))}
                                 </ul>
+                              )}
+                              
+                              {/* Item Edit Form */}
+                              {isEditingItem && isEditingItem.stopId === stop.id && (
+                                <div className="mt-2 mb-4 p-3 rounded" style={{ backgroundColor: 'var(--secondary-bg)' }}>
+                                  <h5 className="font-medium mb-2">Edit Item</h5>
+                                  
+                                  <div className="mb-3">
+                                    <label className="block text-sm mb-1">Item Type</label>
+                                    <select
+                                      value={editItemType}
+                                      onChange={(e) => setEditItemType(e.target.value)}
+                                      className="w-full p-2 rounded"
+                                      style={{ 
+                                        backgroundColor: 'var(--light-contrast)', 
+                                        color: 'var(--dark-contrast)', 
+                                        border: '1px solid var(--secondary-accent)' 
+                                      }}
+                                    >
+                                      {DEFAULT_ITEM_TYPES.map(type => (
+                                        <option key={type} value={type}>{type}</option>
+                                      ))}
+                                    </select>
+                                  </div>
+                                  
+                                  {/* Only show name field for types that require a custom name */}
+                                  {requiresCustomName(editItemType) && (
+                                    <div className="mb-3">
+                                      <label className="block text-sm mb-1">Item Name</label>
+                                      <input
+                                        type="text"
+                                        value={editItemName}
+                                        onChange={(e) => setEditItemName(e.target.value)}
+                                        onKeyDown={(e) => handleItemEditKeyPress(e)}
+                                        className="w-full p-2 rounded"
+                                        style={{ 
+                                          backgroundColor: 'var(--light-contrast)', 
+                                          color: 'var(--dark-contrast)', 
+                                          border: '1px solid var(--secondary-accent)' 
+                                        }}
+                                        placeholder={`Enter ${editItemType} name`}
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="mb-3">
+                                    <label className="block text-sm mb-1">
+                                      Description
+                                      {(editItemType === 'Bobblehead' || editItemType === 'Magazine') && 
+                                        <span className="text-xs ml-1" style={{ color: 'var(--actionPositive)' }}>
+                                          (Recommended for {editItemType}s)
+                                        </span>
+                                      }
+                                    </label>
+                                    <textarea
+                                      value={editItemDescription}
+                                      onChange={(e) => setEditItemDescription(e.target.value)}
+                                      className="w-full p-2 rounded"
+                                      style={{ 
+                                        backgroundColor: 'var(--light-contrast)', 
+                                        color: 'var(--dark-contrast)', 
+                                        border: '1px solid var(--secondary-accent)' 
+                                      }}
+                                      placeholder={
+                                        (editItemType === 'Bobblehead' || editItemType === 'Magazine') 
+                                          ? "e.g., On the shelf in the corner office (optional but recommended)" 
+                                          : "e.g., Any helpful location details (optional)"
+                                      }
+                                    />
+                                  </div>
+                                  
+                                  {editItemType === 'Consumable' && (
+                                    <div className="mb-3">
+                                      <label className="block text-sm mb-1">Quantity</label>
+                                      <input
+                                        type="number"
+                                        min="1"
+                                        value={editItemQuantity}
+                                        onChange={(e) => setEditItemQuantity(parseInt(e.target.value) || 1)}
+                                        className="w-full p-2 rounded"
+                                        style={{ 
+                                          backgroundColor: 'var(--light-contrast)', 
+                                          color: 'var(--dark-contrast)', 
+                                          border: '1px solid var(--secondary-accent)' 
+                                        }}
+                                      />
+                                    </div>
+                                  )}
+                                  
+                                  <div className="flex space-x-2">
+                                    <button
+                                      onClick={saveEditedItem}
+                                      className="px-3 py-1 rounded"
+                                      style={{ 
+                                        backgroundColor: 'var(--main-accent)', 
+                                        color: 'var(--dark-contrast)',
+                                        fontWeight: 'bold'
+                                      }}
+                                    >
+                                      Save Changes
+                                    </button>
+                                    <button
+                                      onClick={cancelEditItem}
+                                      className="px-3 py-1 rounded"
+                                      style={{ 
+                                        backgroundColor: 'var(--secondary-accent)', 
+                                        color: 'var(--light-contrast)' 
+                                      }}
+                                    >
+                                      Cancel
+                                    </button>
+                                  </div>
+                                </div>
                               )}
                             </div>
                             
@@ -3379,9 +3642,8 @@ const FarmingTracker: React.FC = () => {
                             <div className="p-3 rounded" style={{ backgroundColor: 'var(--background)' }}>
                               <h5 className="font-medium mb-2">Add Item to this Stop</h5>
                               <div className="grid grid-cols-2 gap-2 mb-2">
-                                {/* Show Item Name for Event, Task, Harvestable, and Consumable types */}
-                                {(newItemType === 'Event' || newItemType === 'Task' || 
-                                  newItemType === 'Harvestable' || newItemType === 'Consumable') && (
+                                {/* Show Item Name for types that require a custom name */}
+                                {requiresCustomName(newItemType) && (
                                   <div>
                                     <label className="block text-xs mb-1">Item Name:</label>
                                     <input
@@ -3401,8 +3663,7 @@ const FarmingTracker: React.FC = () => {
                                   </div>
                                 )}
 
-                                <div className={newItemType === 'Event' || newItemType === 'Task' || 
-                                                newItemType === 'Harvestable' || newItemType === 'Consumable' ? '' : 'col-span-2'}>
+                                <div className={requiresCustomName(newItemType) ? '' : 'col-span-2'}>
                                   <label className="block text-xs mb-1">Item Type:</label>
                                   <select
                                     value={newItemType}
@@ -3425,7 +3686,7 @@ const FarmingTracker: React.FC = () => {
                               <div className="mb-2">
                                 <label className="block text-xs mb-1">
                                   Location Description:
-                                  {(newItemType === 'Bobblehead' || newItemType === 'Magazine') && 
+                                  {usesDefaultName(newItemType) && 
                                     <span className="text-xs ml-1" style={{ color: 'var(--actionPositive)' }}>
                                       (Recommended for {newItemType}s)
                                     </span>
@@ -3443,7 +3704,7 @@ const FarmingTracker: React.FC = () => {
                                     border: '1px solid var(--secondary-accent)' 
                                   }}
                                   placeholder={
-                                    (newItemType === 'Bobblehead' || newItemType === 'Magazine') 
+                                    usesDefaultName(newItemType)
                                       ? "e.g., On the shelf in the corner office (optional but recommended)" 
                                       : "e.g., Any helpful location details (optional)"
                                   }

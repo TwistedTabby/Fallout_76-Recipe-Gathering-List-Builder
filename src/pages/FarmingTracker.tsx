@@ -16,9 +16,6 @@ import {
   faHistory,
   faPlus
 } from '@fortawesome/free-solid-svg-icons';
-// We don't need react-beautiful-dnd for this component
-// Import your API module if it exists
-// import { api } from '../path/to/api'; 
 
 // Define the database schema
 interface FarmingTrackerDB extends DBSchema {
@@ -827,10 +824,8 @@ const FarmingTracker: React.FC = () => {
     
     setCurrentRoute(updatedRoute);
     updateRouteInList(updatedRoute);
-    showNotification('Item deleted successfully!', 'success');
     
-    // Restore focus after deletion
-    restoreFocus();
+    // Do not restore focus after deletion to prevent page from scrolling to the top
   };
 
   // Function to reorder stops

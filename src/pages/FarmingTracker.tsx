@@ -3478,6 +3478,23 @@ const FarmingTracker: React.FC = () => {
                                         ) : (
                                           <div className="flex space-x-1">
                                             <button
+                                              onClick={() => editItem(stop.id, item.id)}
+                                              className="px-2 py-1 rounded text-sm"
+                                              style={{ 
+                                                backgroundColor: 'var(--main-accent)', 
+                                                color: 'var(--dark-contrast)',
+                                                width: '36px',
+                                                height: '36px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center'
+                                              }}
+                                              aria-label={`Edit ${item.name}`}
+                                            >
+                                              <FontAwesomeIcon icon={faEdit} />
+                                              <span className="sr-only">Edit</span>
+                                            </button>
+                                            <button
                                               onClick={() => {
                                                 deleteItem(stop.id, item.id).catch(err => {
                                                   console.error('Error deleting item:', err);
@@ -3498,23 +3515,6 @@ const FarmingTracker: React.FC = () => {
                                             >
                                               <FontAwesomeIcon icon={faTrash} />
                                               <span className="sr-only">Remove</span>
-                                            </button>
-                                            <button
-                                              onClick={() => editItem(stop.id, item.id)}
-                                              className="px-2 py-1 rounded text-sm"
-                                              style={{ 
-                                                backgroundColor: 'var(--main-accent)', 
-                                                color: 'var(--dark-contrast)',
-                                                width: '36px',
-                                                height: '36px',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center'
-                                              }}
-                                              aria-label={`Edit ${item.name}`}
-                                            >
-                                              <FontAwesomeIcon icon={faEdit} />
-                                              <span className="sr-only">Edit</span>
                                             </button>
                                           </div>
                                         )}

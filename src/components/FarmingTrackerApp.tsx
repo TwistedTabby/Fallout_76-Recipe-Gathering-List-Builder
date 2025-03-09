@@ -8,6 +8,7 @@ import ConfirmDialog from './ui/ConfirmDialog';
 import RouteList from './RouteList';
 import RouteEditor from './RouteEditor';
 import RouteTracker from './RouteTracker';
+import ImportExportTools from './tools/ImportExportTools';
 import { Route, RouteProgress } from '../types/farmingTracker';
 
 /**
@@ -43,6 +44,9 @@ const FarmingTrackerApp: React.FC = () => {
 
   // State for view management
   const [view, setView] = useState<'list' | 'editor' | 'tracker'>('list');
+  
+  // State for showing import/export tools
+  const [showTools, setShowTools] = useState(false);
 
   // Load data on component mount
   useEffect(() => {
@@ -252,6 +256,54 @@ const FarmingTrackerApp: React.FC = () => {
     }
   };
 
+  // Handle importing data
+  const handleImportData = async (
+    importedRoutes: Route[], 
+    importedCurrentRouteId: string | null, 
+    importedActiveTracking: RouteProgress | null
+  ) => {
+    // Update routes
+    setRoutes(importedRoutes);
+    
+    // Update current route if available
+    if (importedCurrentRouteId) {
+      const currentRoute = importedRoutes.find(r => r.id === importedCurrentRouteId);
+      if (currentRoute) {
+        setCurrentRoute(currentRoute);
+      }
+    }
+    
+    // Update active tracking if available
+    if (importedActiveTracking) {
+      setActiveTracking(importedActiveTracking);
+      
+      // If we have active tracking, switch to tracker view
+      const trackedRoute = importedRoutes.find(r => r.id === importedActiveTracking.routeId);
+      if (trackedRoute) {
+        setCurrentRoute(trackedRoute);
+        setView('tracker');
+      }
+    }
+    
+    // Save all data to storage
+    for (const route of importedRoutes) {
+      await saveRoute(route);
+    }
+    
+    if (importedCurrentRouteId) {
+      await saveCurrentRouteId(importedCurrentRouteId);
+    }
+    
+    if (importedActiveTracking) {
+      await saveActiveTracking(importedActiveTracking);
+    }
+  };
+
+  // Toggle import/export tools visibility
+  const toggleTools = () => {
+    setShowTools(!showTools);
+  };
+
   // Render loading state
   if (isLoading) {
     return <div className="loading">Loading...</div>;
@@ -279,22 +331,44 @@ const FarmingTrackerApp: React.FC = () => {
       {/* Main content */}
       <div className="app-header">
         <h1>Fallout 76 Farming Tracker</h1>
-        {/* Navigation buttons */}
-        {view !== 'list' && (
+        <div className="app-header-actions">
+          {/* Navigation buttons */}
+          {view !== 'list' && (
+            <button 
+              className="back-to-list-button"
+              onClick={() => {
+                if (view === 'tracker' && activeTracking) {
+                  handleCancelTracking();
+                } else {
+                  setView('list');
+                }
+              }}
+            >
+              Back to List
+            </button>
+          )}
+          
+          {/* Import/Export toggle button */}
           <button 
-            className="back-to-list-button"
-            onClick={() => {
-              if (view === 'tracker' && activeTracking) {
-                handleCancelTracking();
-              } else {
-                setView('list');
-              }
-            }}
+            className={`tools-toggle-button ${showTools ? 'active' : ''}`}
+            onClick={toggleTools}
           >
-            Back to List
+            {showTools ? 'Hide Tools' : 'Show Tools'}
           </button>
-        )}
+        </div>
       </div>
+      
+      {/* Import/Export Tools */}
+      {showTools && (
+        <ImportExportTools
+          routes={routes}
+          currentRouteId={currentRoute?.id || null}
+          activeTracking={activeTracking}
+          onImportData={handleImportData}
+          onConfirm={confirm}
+          onNotify={showNotification}
+        />
+      )}
       
       <div className="app-content">
         {view === 'list' && (

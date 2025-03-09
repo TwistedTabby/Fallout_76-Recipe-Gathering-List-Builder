@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faTimes, faPlus, faEdit } from '@fortawesome/free-solid-svg-icons';
 import { Route, Stop } from '../types/farmingTracker';
 import { v4 as uuidv4 } from 'uuid';
+import StopEditor from './StopEditor';
 
 interface RouteEditorProps {
   route: Route;
@@ -17,6 +18,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({ route, onSave, onCancel }) =>
   // Local state for editing
   const [editedRoute, setEditedRoute] = useState<Route>({ ...route });
   const [isAddingStop, setIsAddingStop] = useState(false);
+  const [editingStopId, setEditingStopId] = useState<string | null>(null);
   const [newStopName, setNewStopName] = useState('');
   const [newStopDescription, setNewStopDescription] = useState('');
 
@@ -64,6 +66,23 @@ const RouteEditor: React.FC<RouteEditorProps> = ({ route, onSave, onCancel }) =>
     setIsAddingStop(false);
   };
 
+  // Handle editing a stop
+  const handleEditStop = (stopId: string) => {
+    setEditingStopId(stopId);
+  };
+
+  // Handle saving an edited stop
+  const handleSaveStop = (updatedStop: Stop) => {
+    setEditedRoute(prev => ({
+      ...prev,
+      stops: prev.stops.map(stop => 
+        stop.id === updatedStop.id ? updatedStop : stop
+      )
+    }));
+    
+    setEditingStopId(null);
+  };
+
   // Handle deleting a stop
   const handleDeleteStop = (stopId: string) => {
     setEditedRoute(prev => ({
@@ -82,6 +101,20 @@ const RouteEditor: React.FC<RouteEditorProps> = ({ route, onSave, onCancel }) =>
 
     onSave(editedRoute);
   };
+
+  // If we're editing a stop, show the StopEditor
+  if (editingStopId) {
+    const stopToEdit = editedRoute.stops.find(stop => stop.id === editingStopId);
+    if (stopToEdit) {
+      return (
+        <StopEditor
+          stop={stopToEdit}
+          onSave={handleSaveStop}
+          onCancel={() => setEditingStopId(null)}
+        />
+      );
+    }
+  }
 
   return (
     <div className="route-editor">
@@ -212,6 +245,13 @@ const RouteEditor: React.FC<RouteEditorProps> = ({ route, onSave, onCancel }) =>
                   <h4 className="stop-name">{stop.name}</h4>
                   <div className="stop-actions">
                     <button 
+                      className="edit-stop-button"
+                      onClick={() => handleEditStop(stop.id)}
+                      title="Edit Stop"
+                    >
+                      <FontAwesomeIcon icon={faEdit} />
+                    </button>
+                    <button 
                       className="delete-stop-button"
                       onClick={() => handleDeleteStop(stop.id)}
                       title="Delete Stop"
@@ -225,7 +265,6 @@ const RouteEditor: React.FC<RouteEditorProps> = ({ route, onSave, onCancel }) =>
                 )}
                 <div className="stop-items-summary">
                   <span>{stop.items.length} items</span>
-                  {/* We'll add an edit button here later when we implement the StopEditor */}
                 </div>
               </li>
             ))}

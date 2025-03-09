@@ -114,12 +114,8 @@ const FarmingTrackerApp: React.FC = () => {
 
   // Handle route creation
   const handleCreateRoute = () => {
-    console.log("Creating new route");
-    
     // Generate a unique ID for the new route
     const routeId = uuidv4();
-    console.log("Generated route ID:", routeId);
-    
     const newRoute: Route = {
       id: routeId,
       name: 'New Route',
@@ -130,7 +126,6 @@ const FarmingTrackerApp: React.FC = () => {
     };
 
     // Save the new route to the database
-    console.log("Saving new route to database:", newRoute);
     saveRoute(newRoute);
     
     // Add the new route to the routes array
@@ -258,9 +253,6 @@ const FarmingTrackerApp: React.FC = () => {
 
   // Handle adding a stop to a route
   const handleAddStop = (routeId: string) => {
-    console.log("FarmingTrackerApp.handleAddStop called with routeId:", routeId);
-    console.log("currentRoute:", currentRoute);
-    console.log("routes:", routes);
     
     // Create a new stop with a guaranteed name
     const newStop: Stop = {
@@ -271,11 +263,9 @@ const FarmingTrackerApp: React.FC = () => {
       collectData: false
     };
 
-    console.log("Created new stop:", newStop);
-
+    
     // First, check if the routeId matches the currentRoute
     if (currentRoute && (currentRoute.id === routeId)) {
-      console.log("Using currentRoute directly");
       
       // Add the stop to the current route
       const updatedRoute = {
@@ -318,11 +308,9 @@ const FarmingTrackerApp: React.FC = () => {
     
     // If we get here, try to find the route in the routes array
     let route = routes.find(r => r.id === routeId);
-    console.log("Route found in routes array:", !!route);
     
     // If route is still not found, show an error and return
     if (!route) {
-      console.log("Route not found, showing error");
       showNotification({
         type: 'error',
         message: 'Route not found',
@@ -590,7 +578,6 @@ const FarmingTrackerApp: React.FC = () => {
       });
 
       if (confirmed) {
-        console.log('Canceling route tracking...');
         
         // Clear active tracking and current route reference
         await saveActiveTracking(null);
@@ -602,7 +589,6 @@ const FarmingTrackerApp: React.FC = () => {
         
         // Verify that tracking is cleared
         const verifyTracking = await loadActiveTracking();
-        console.log('After cancellation, tracking exists:', !!verifyTracking);
         
         setView('list');
         

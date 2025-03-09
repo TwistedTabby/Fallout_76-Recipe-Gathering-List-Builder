@@ -113,4 +113,4 @@ export const ITEM_TYPES_WITH_DEFAULT_NAME = ['Bobblehead', 'Magazine'];
 /**
  * Item types that don't need a quantity field
  */
-export const ITEM_TYPES_WITHOUT_QUANTITY = ['Bobblehead', 'Magazine', 'Event', 'Task']; 
+export const ITEM_TYPES_WITHOUT_QUANTITY = ['Bobblehead', 'Magazine', 'Event', 'Task', 'Harvestable']; 

@@ -6,11 +6,7 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-  
-  /* Fallback RGB values in case they're not set by the Layout component */
-  --secondary-accent-rgb: 0, 90, 156; /* Default Vault-Tec Blue */
-  --activeHighlight-rgb: 0, 78, 140;  /* Default active highlight blue */
-  --main-accent-rgb: 255, 204, 0;     /* Default Vault-Tec Gold */
+ 
 }
 
 body {
@@ -29,6 +25,14 @@ body {
   overflow: hidden;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bg-main-accent {
+  background-color: var(--main-accent);
+}
+
+.bg-secondary-accent {
+  background-color: var(--secondary-accent);
 }
 
 .card:hover {
@@ -789,6 +793,78 @@ button[style*="background-color: var(--activeButtonBg)"] {
   background-color: rgba(0, 0, 0, 0.2) !important;
 }
 
+/* Select element styling */
+select.form-control {
+  appearance: auto !important;
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: var(--light-contrast) !important;
+  cursor: pointer !important;
+}
+
+/* Select options styling */
+select.form-control option {
+  background-color: var(--secondary-accent) !important;
+  color: var(--light-contrast) !important;
+  padding: 8px !important;
+}
+
+/* Select element with route-editor-field class */
+select.route-editor-field {
+  background-color: rgba(255, 255, 255, 0.8) !important;
+  color: var(--dark-contrast) !important;
+  border-color: var(--main-accent) !important;
+}
+
+/* Select element with route-editor-field class options */
+select.route-editor-field option {
+  background-color: var(--light-contrast) !important;
+  color: var(--dark-contrast) !important;
+  padding: 8px !important;
+}
+
+/* Select element with bg-secondary-accent class */
+select.form-control.bg-secondary-accent {
+  background-color: var(--secondary-accent) !important;
+  color: var(--light-contrast) !important;
+}
+
+/* Item type and description spans */
+.item-type, .item-description, .item-quantity {
+  background-color: rgba(0, 0, 0, 0.2) !important;
+  color: var(--light-contrast) !important;
+  padding: 0.2rem 0.5rem !important;
+  border-radius: 0.25rem !important;
+  font-size: 0.875rem !important;
+  display: inline-block !important;
+  margin-right: 0.25rem !important;
+}
+
+#root .item-quantity {
+  background-color: var(--secondary-accent) !important;
+}
+
+#root .item-description {
+  color: var(--secondary-accent) !important;
+  font-style: normal !important;
+  background-color: rgba(0,0,0,0) !important;
+  font-weight: 500 !important;
+}
+
+.item-type {
+  background-color: var(--main-accent) !important;
+  color: var(--dark-contrast) !important;
+  font-weight: 500 !important;
+}
+
+.item-quantity {
+  background-color: rgba(0, 0, 0, 0.3) !important;
+}
+
+.item-description {
+  background-color: rgba(0, 0, 0, 0.15) !important;
+  font-style: italic !important;
+}
+
 .form-control:focus {
   outline: none !important;
   border-color: var(--main-accent) !important;
@@ -991,4 +1067,25 @@ h2, h3 {
 
 .stops-header h3 {
   font-size: 1.25rem !important;
+}
+
+/* Item edit form styling */
+.add-item-form {
+  background-color: rgba(255, 255, 255, 0.05) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: 0.5rem !important;
+  transition: all 0.2s ease !important;
+}
+
+.add-item-form:hover {
+  box-shadow: 0 0 0 2px rgba(var(--main-accent-rgb), 0.15) !important;
+}
+
+.add-item-form h4 {
+  color: var(--light-contrast) !important;
+  margin-bottom: 1rem !important;
+}
+
+.form-actions {
+  margin-top: 1.5rem !important;
 } 

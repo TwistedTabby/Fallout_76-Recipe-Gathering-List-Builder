@@ -16,9 +16,7 @@ export default function ImportRecipe() {
   // @TODO: Use a service provider for the auth check (Clerk, Auth0, etc.)
   const checkAuthStatus = async () => {
     try {
-      console.log('Starting auth status check...');
       const response = await fetch('/api/auth/check');
-      console.log('Auth check response status:', response.status);
       
       if (!response.ok) {
         console.error('Auth check failed:', response.status);
@@ -26,10 +24,8 @@ export default function ImportRecipe() {
       }
       
       const data = await response.json();
-      console.log('Auth check data:', data);
       
       setIsAuthenticated(data.isAuthenticated);
-      console.log('Set authenticated state to:', data.isAuthenticated);
       
     } catch (error) {
       console.error('Auth check error:', error);
@@ -57,7 +53,6 @@ export default function ImportRecipe() {
     e.preventDefault();
     try {
       const parsedJson = JSON.parse(jsonInput);
-      console.log('Parsed JSON:', parsedJson);
       // TODO: Add logic to handle the imported recipe
     } catch (error) {
       console.error('Invalid JSON:', error);

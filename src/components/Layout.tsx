@@ -187,11 +187,6 @@ const Layout = ({ children, title }: LayoutProps) => {
         '--activeButtonBg': colors.activeButtonBg,
         '--activeButtonText': colors.activeButtonText,
         
-        // RGB values for use in rgba() functions
-        '--main-accent-rgb': hexToRgb(colors.mainAccent),
-        '--secondary-accent-rgb': hexToRgb(colors.secondaryAccent),
-        '--activeHighlight-rgb': hexToRgb(colors.activeHighlight),
-        
         // Apply some basic styling using our colors
         backgroundColor: 'var(--background)',
         color: 'var(--dark-contrast)',

@@ -52,12 +52,6 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
 
   // Add a useEffect to log the stops when they change
   useEffect(() => {
-    console.log('Route stops:', editedRoute.stops);
-    editedRoute.stops.forEach((stop, index) => {
-      console.log(`Stop ${index}:`, stop);
-      console.log(`Stop ${index} name:`, stop.name);
-      console.log(`Stop ${index} description:`, stop.description);
-    });
   }, [editedRoute.stops]);
 
   // Handle name change
@@ -88,21 +82,10 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
 
   // Handle adding a new stop
   const handleAddStop = () => {
-    console.log("Add Stop button clicked");
-    console.log("editedRoute:", editedRoute);
-    console.log("onAddStop exists:", !!onAddStop);
-    console.log("editedRoute.id exists:", !!editedRoute.id);
-    
     if (onAddStop) {
       if (editedRoute.id) {
-        console.log("Calling onAddStop with ID:", editedRoute.id);
         onAddStop(editedRoute.id);
-      } else {
-        console.log("No route ID available, cannot add stop");
-        // Show an error or notification here
       }
-    } else {
-      console.log("onAddStop function not provided");
     }
   };
 
@@ -161,7 +144,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
   };
 
   return (
-    <div className="card route-editor-container">
+    <div className="card route-editor-container bg-secondary-accent">
       <div className="card-header route-editor-header">
         <h2>{route ? 'Edit Route' : 'Create New Route'}</h2>
         <div className="route-editor-actions">
@@ -267,7 +250,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                   </div>
                   <div className="stop-actions">
                     <button 
-                      className="btn-icon-sm btn-secondary"
+                      className="btn-icon-sm btn-primary"
                       onClick={() => handleMoveStopUp(index)}
                       disabled={index === 0}
                       aria-label="Move stop up"

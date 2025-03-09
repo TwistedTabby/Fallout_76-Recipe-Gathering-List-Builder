@@ -34,6 +34,8 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   
   // Reference to the name input field for auto-focus
   const nameInputRef = useRef<HTMLInputElement>(null);
+  // Reference to the item type select for refocusing after add/edit
+  const itemTypeSelectRef = useRef<HTMLSelectElement>(null);
   
   // Auto-focus the name field when the component mounts
   useEffect(() => {
@@ -47,11 +49,15 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
     }
   }, []);
 
-  // Log the initial stop data
+  // Clear name field when switching from a default name type to a non-default name type
   useEffect(() => {
-    console.log("StopEditor initialized with stop:", stop);
-    console.log("editedStop:", editedStop);
-  }, []);
+    // If switching from a default name type to a non-default name type
+    // and the name is currently set to the previous type, clear it
+    if (!ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType) && 
+        newItemName && ITEM_TYPES_WITH_DEFAULT_NAME.some(type => type === newItemName)) {
+      setNewItemName('');
+    }
+  }, [newItemType]);
 
   // Handle name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -91,8 +97,8 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
 
   // Handle adding a new item
   const handleAddItem = () => {
-    // Validate item name for types that require it
-    if (ITEM_TYPES_REQUIRING_NAME.includes(newItemType) && !newItemName.trim()) {
+    // Validate item name for types that require it or types that don't have default names
+    if ((ITEM_TYPES_REQUIRING_NAME.includes(newItemType) || !ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)) && !newItemName.trim()) {
       setValidationError('Item name is required for this type');
       return;
     }
@@ -101,9 +107,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
     const newItem: Item = {
       id: uuidv4(),
       type: newItemType,
-      name: ITEM_TYPES_REQUIRING_NAME.includes(newItemType) 
-        ? newItemName.trim() 
-        : ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
+      name: ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
           ? newItemType
           : newItemName.trim() || newItemType,
       quantity: ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) ? 1 : newItemQuantity,
@@ -145,8 +149,8 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   const handleSaveEditedItem = () => {
     if (!editingItemId) return;
 
-    // Validate item name for types that require it
-    if (ITEM_TYPES_REQUIRING_NAME.includes(newItemType) && !newItemName.trim()) {
+    // Validate item name for types that require it or types that don't have default names
+    if ((ITEM_TYPES_REQUIRING_NAME.includes(newItemType) || !ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)) && !newItemName.trim()) {
       setValidationError('Item name is required for this type');
       return;
     }
@@ -157,9 +161,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
         ? {
             ...item,
             type: newItemType,
-            name: ITEM_TYPES_REQUIRING_NAME.includes(newItemType) 
-              ? newItemName.trim() 
-              : ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
+            name: ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
                 ? newItemType
                 : newItemName.trim() || newItemType,
             quantity: ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) ? 1 : newItemQuantity,
@@ -221,11 +223,19 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
       } else {
         handleAddItem();
       }
+      
+      // Set focus back to the item type select after a short delay
+      // to allow the form to reset
+      setTimeout(() => {
+        if (itemTypeSelectRef.current) {
+          itemTypeSelectRef.current.focus();
+        }
+      }, 50);
     }
   };
 
   return (
-    <div className="card route-editor">
+    <div className="card route-editor-container bg-secondary-accent">
       <div className="card-header route-editor-header">
         <h2>{editedStop.id ? 'Edit Stop' : 'Create Stop'}</h2>
         <div className="route-editor-actions">
@@ -252,7 +262,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           <input
             id="stop-name"
             type="text"
-            className="form-control"
+            className={`route-editor-field form-control ${validationError && validationError.includes('Stop name') ? 'validation-error' : ''}`}
             value={editedStop.name}
             onChange={handleNameChange}
             onBlur={() => {
@@ -264,43 +274,48 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
             ref={nameInputRef}
           />
           {validationError && validationError.includes('Stop name') && (
-            <div className="text-red-500 mt-1 text-sm">{validationError}</div>
+            <div className="validation-error mt-1 text-sm">{validationError}</div>
           )}
         </div>
         
-        <div className="form-group">
-          <label htmlFor="stop-description" className="form-label">Notes:</label>
-          <textarea
-            id="stop-description"
-            className="form-control"
-            value={editedStop.description}
-            onChange={handleDescriptionChange}
-            rows={3}
-            placeholder="Add any notes about this stop here..."
-          />
-        </div>
-        
-        <div className="form-group">
-          <div className="flex items-center">
-            <input
-              id="collect-data"
-              type="checkbox"
-              className="mr-2"
-              checked={editedStop.collectData}
-              onChange={handleCollectDataChange}
+        <div className="form-row md:grid-cols-2">
+          <div className="form-group">
+            <label htmlFor="stop-description" className="form-label">Notes:</label>
+            <textarea
+              id="stop-description"
+              className="form-control route-editor-field"
+              value={editedStop.description}
+              onChange={handleDescriptionChange}
+              rows={3}
+              placeholder="Add any notes about this stop here..."
+              style={{height: "100%"}}
             />
-            <label htmlFor="collect-data" className="form-label mb-0">
-              Collect inventory data at this stop
-            </label>
+          </div>
+          
+          <div className="form-group inventory-check-container" style={{marginBottom: 0}}>
+            <label className="form-label">Options:</label>
+            <div className="inventory-check-wrapper">
+              <div className="flex items-center checkbox-label-container">
+                <input
+                  id="stop-auto-inventory-checks"
+                  type="checkbox"
+                  className="mr-2 inventory-check-input"
+                  checked={editedStop.collectData}
+                  onChange={handleCollectDataChange}
+                />
+                <label htmlFor="stop-auto-inventory-checks" className="form-label mb-0 font-medium">
+                  Collect inventory data
+                </label>
+              </div>
+              <p className="help-text text-sm mt-1">
+                When checked, the app will ask for an inventory count of harvestable items at the start and end of the stop.
+              </p>
+            </div>
           </div>
         </div>
         
         {editedStop.name === 'New Stop' && editedStop.items.length === 0 && (
-          <div className="p-3 rounded-md mb-4" style={{ 
-            backgroundColor: 'var(--secondary-accent)',
-            color: 'var(--light-contrast)',
-            opacity: 0.8
-          }}>
+          <div className="p-3 rounded-md mb-4 bg-secondary-accent">
             <p className="text-sm">
               <strong>Tip:</strong> Give this stop a meaningful name and add items that can be found here.
               You can add items using the form below.
@@ -315,13 +330,10 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           
           {/* Item Form - Only shown when adding a new item or editing an existing one */}
           {showItemForm || editingItemId ? (
-            <div className={`add-item-form p-4 rounded-md mb-4 ${editingItemId ? 'bg-gray-50 border border-gray-200' : 'bg-gray-50'}`}>
+            <div className={`add-item-form p-4 rounded-md mb-4 ${editingItemId ? 'border border-secondary-accent' : ''}`}>
               <h4 className="text-md font-semibold mb-2 flex justify-between items-center">
                 {editingItemId ? (
-                  <span className="px-2 py-1 rounded-md inline-flex items-center" style={{ 
-                    backgroundColor: 'var(--secondary-accent)',
-                    color: 'var(--light-contrast)'
-                  }}>
+                  <span className="px-2 py-1 rounded-md inline-flex items-center bg-secondary-accent text-light-contrast">
                     <FontAwesomeIcon icon={faEdit} className="mr-1" /> Editing
                   </span>
                 ) : (
@@ -330,14 +342,14 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                   </span>
                 )}
                 
-                <span className="text-sm text-gray-600">
-                  <FontAwesomeIcon icon={faSave} className="mr-1" /> Tip: Press <kbd className="px-1 py-0.5 bg-gray-100 border border-gray-300 rounded">CTRL+Enter</kbd> to {editingItemId ? "update" : "add"}
+                <span className="text-sm text-dark-contrast opacity-80">
+                  <FontAwesomeIcon icon={faSave} className="mr-1" /> Tip: Press <kbd className="px-1 py-0.5 rounded bg-secondary-accent text-light-contrast border border-secondary-accent">CTRL+Enter</kbd> to {editingItemId ? "update" : "add"}
                 </span>
               </h4>
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) ? (
-                  // For items without quantity, stack type and description vertically in a single column
+                {ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) && !ITEM_TYPES_REQUIRING_NAME.includes(newItemType) ? (
+                  // For items without quantity AND without required name, stack type and description vertically in a single column
                   <div className="md:col-span-2">
                     <div className="form-group mb-4">
                       <label htmlFor="item-type" className="form-label">
@@ -347,8 +359,9 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         id="item-type"
                         value={newItemType}
                         onChange={(e) => setNewItemType(e.target.value as ItemType)}
-                        className="form-control"
+                        className="form-control route-editor-field"
                         onKeyDown={handleKeyDown}
+                        ref={itemTypeSelectRef}
                       >
                         {DEFAULT_ITEM_TYPES.map(type => (
                           <option key={type} value={type}>{type}</option>
@@ -361,7 +374,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                       <input
                         id="item-description"
                         type="text"
-                        className="form-control"
+                        className="form-control route-editor-field"
                         value={newItemDescription}
                         onChange={(e) => setNewItemDescription(e.target.value)}
                         placeholder="Optional description or location hint"
@@ -370,7 +383,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                     </div>
                   </div>
                 ) : (
-                  // For items with quantity, keep the original grid layout
+                  // For items with quantity OR required name, use a two-column grid layout
                   <>
                     <div className="form-group">
                       <label htmlFor="item-type" className="form-label">
@@ -380,8 +393,9 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         id="item-type"
                         value={newItemType}
                         onChange={(e) => setNewItemType(e.target.value as ItemType)}
-                        className="form-control"
+                        className="form-control route-editor-field"
                         onKeyDown={handleKeyDown}
+                        ref={itemTypeSelectRef}
                       >
                         {DEFAULT_ITEM_TYPES.map(type => (
                           <option key={type} value={type}>{type}</option>
@@ -395,37 +409,45 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         <input
                           id="item-name"
                           type="text"
-                          className={`form-control ${validationError && validationError.includes('Item name') ? 'border-red-500' : ''}`}
+                          className={`form-control route-editor-field ${validationError && validationError.includes('Item name') ? 'validation-error' : ''}`}
                           value={newItemName}
                           onChange={(e) => setNewItemName(e.target.value)}
                           placeholder="Enter item name"
                           onKeyDown={handleKeyDown}
                         />
                         {validationError && validationError.includes('Item name') && (
-                          <div className="text-red-500 mt-1 text-sm">{validationError}</div>
+                          <div className="validation-error mt-1 text-sm">{validationError}</div>
                         )}
                       </div>
                     )}
                     
-                    <div className="form-group">
-                      <label htmlFor="item-quantity" className="form-label">Quantity:</label>
-                      <input
-                        id="item-quantity"
-                        type="number"
-                        className="form-control"
-                        min="1"
-                        value={newItemQuantity}
-                        onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
-                        onKeyDown={handleKeyDown}
-                      />
-                    </div>
+                    {!ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) ? (
+                      <div className="form-group">
+                        <label htmlFor="item-quantity" className="form-label">Quantity:</label>
+                        <input
+                          id="item-quantity"
+                          type="number"
+                          className="form-control route-editor-field"
+                          min="1"
+                          value={newItemQuantity}
+                          onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
+                          onKeyDown={handleKeyDown}
+                        />
+                      </div>
+                    ) : (
+                      // If no quantity field, add an empty div to maintain the grid layout
+                      <div className="form-group invisible">
+                        <label className="form-label">&nbsp;</label>
+                        <div className="h-10">&nbsp;</div>
+                      </div>
+                    )}
                     
                     <div className="form-group">
                       <label htmlFor="item-description" className="form-label">Description:</label>
                       <input
                         id="item-description"
                         type="text"
-                        className="form-control"
+                        className="form-control route-editor-field"
                         value={newItemDescription}
                         onChange={(e) => setNewItemDescription(e.target.value)}
                         placeholder="Optional description or location hint"
@@ -476,13 +498,15 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
               {editedStop.items.map(item => (
                 <li key={item.id} className="stop-item">
                   <div className="stop-info">
-                    <div className="stop-name">{item.name}</div>
+                    {!ITEM_TYPES_WITH_DEFAULT_NAME.includes(item.type) && (
+                      <div className="stop-name">{item.name}</div>
+                    )}
                     <div className="stop-description">
                       <span className="item-type">{item.type}</span>
                       {!ITEM_TYPES_WITHOUT_QUANTITY.includes(item.type) && item.quantity > 1 && 
                         <span className="item-quantity ml-2">× {item.quantity}</span>
                       }
-                      {item.description && <span className="item-description ml-2">- {item.description}</span>}
+                      {item.description && <span className="item-description ml-2">{item.description}</span>}
                     </div>
                   </div>
                   <div className="stop-actions">
@@ -509,7 +533,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
             </ul>
           ) : (
             !showItemForm && !editingItemId ? (
-              <div className="p-4 text-center bg-gray-50 rounded-lg">
+              <div className="no-stops-message p-4 text-center rounded-lg">
                 <button 
                   className="btn btn-secondary"
                   onClick={() => setShowItemForm(true)}

@@ -22,7 +22,6 @@ export function useFarmingTrackerDB() {
     
     return openDB<FarmingTrackerDB>('farming-tracker-db', 3, {
       upgrade(db, oldVersion, newVersion) {
-        console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
         
         // If this is a fresh database (version 0)
         if (oldVersion < 1) {
@@ -270,12 +269,10 @@ export function useFarmingTrackerDB() {
       const db = await initDB();
       
       if (tracking) {
-        console.log('Saving active tracking:', tracking);
         // Save the tracking data directly, routeId is already the keyPath
         await db.put('activeTracking', tracking);
         localStorage.setItem('activeTracking', JSON.stringify(tracking));
       } else {
-        console.log('Deleting active tracking');
         // If tracking is null, delete from both storages
         // Get all active tracking entries to delete them
         const allTracking = await db.getAll('activeTracking');

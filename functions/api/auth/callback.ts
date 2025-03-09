@@ -49,9 +49,9 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
     });
 
     // Debug logging
-    console.log('Token response status:', tokenResponse.status);
+    
     const responseText = await tokenResponse.text();
-    console.log('Token response text:', responseText);
+    
 
     let tokenData;
     try {
@@ -94,9 +94,6 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
 
     const userData = await userResponse.json();
 
-    // Add logging to debug the user data
-    console.log('User data received:', JSON.stringify(userData));
-
     // Check if user is a collaborator using the specific user check endpoint
     const collaboratorResponse = await fetch(
       `https://api.github.com/repos/TwistedTabby/Fallout_76-Recipe-Gathering-List-Builder/collaborators/${userData.login}`,
@@ -109,8 +106,6 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
         },
       }
     );
-
-    console.log('Collaborator response status:', collaboratorResponse.status);
 
     // Handle different response status codes
     if (collaboratorResponse.status === 404) {
@@ -144,8 +139,6 @@ export const onRequestGet = async (context: EventContext<Env, any, Record<string
 
       const permissionData = await permissionsResponse.json();
       const permission = permissionData.permission;
-      
-      console.log('Permission data:', permission);
 
       // Check if user has sufficient permissions (write access or higher)
       const hasAccess = ['admin', 'maintain', 'write'].includes(permission);

@@ -11,7 +11,7 @@ export interface FarmingTrackerDB extends DBSchema {
   };
   activeTracking: {
     key: string;
-    value: RouteProgress & { id?: string };
+    value: RouteProgress;
   };
   currentRouteId: {
     key: string;

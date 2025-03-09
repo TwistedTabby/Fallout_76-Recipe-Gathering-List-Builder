@@ -20,7 +20,7 @@ export function useFarmingTrackerDB() {
       throw new Error('IndexedDB is not available in this browser');
     }
     
-    return openDB<FarmingTrackerDB>('farming-tracker-db', 2, {
+    return openDB<FarmingTrackerDB>('farming-tracker-db', 3, {
       upgrade(db, oldVersion, newVersion) {
         console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
         
@@ -53,6 +53,19 @@ export function useFarmingTrackerDB() {
           // Create a new activeTracking store with the correct keyPath
           db.createObjectStore('activeTracking', {
             keyPath: 'id'
+          });
+        }
+
+        // If upgrading from version 2 to 3, change the keyPath from 'id' to 'routeId'
+        if (oldVersion < 3) {
+          // Delete the old activeTracking store if it exists
+          if (db.objectStoreNames.contains('activeTracking')) {
+            db.deleteObjectStore('activeTracking');
+          }
+          
+          // Create a new activeTracking store with 'routeId' as the keyPath
+          db.createObjectStore('activeTracking', {
+            keyPath: 'routeId'
           });
         }
       }
@@ -257,19 +270,19 @@ export function useFarmingTrackerDB() {
       const db = await initDB();
       
       if (tracking) {
-        console.log('Saving active tracking:', { ...tracking, id: 'current' });
-        // Add the id property for IndexedDB
-        await db.put('activeTracking', { ...tracking, id: 'current' });
+        console.log('Saving active tracking:', tracking);
+        // Save the tracking data directly, routeId is already the keyPath
+        await db.put('activeTracking', tracking);
         localStorage.setItem('activeTracking', JSON.stringify(tracking));
       } else {
-        console.log('Deleting active tracking with key: current');
+        console.log('Deleting active tracking');
         // If tracking is null, delete from both storages
-        await db.delete('activeTracking', 'current');
+        // Get all active tracking entries to delete them
+        const allTracking = await db.getAll('activeTracking');
+        for (const track of allTracking) {
+          await db.delete('activeTracking', track.routeId);
+        }
         localStorage.removeItem('activeTracking');
-        
-        // Verify deletion
-        const checkTracking = await db.get('activeTracking', 'current');
-        console.log('After deletion, tracking exists:', !!checkTracking);
       }
     } catch (error) {
       console.error('Error saving active tracking to IndexedDB:', error);
@@ -296,17 +309,16 @@ export function useFarmingTrackerDB() {
     try {
       const db = await initDB();
       
-      // Get the active tracking entry with id 'current'
-      const activeTrackingObj = await db.get('activeTracking', 'current');
+      // Get all active tracking entries (should be only one)
+      const allTracking = await db.getAll('activeTracking');
       
-      if (activeTrackingObj) {
-        // Remove the id property before returning
-        const { id, ...trackingData } = activeTrackingObj;
-        return trackingData as RouteProgress;
+      if (allTracking && allTracking.length > 0) {
+        return allTracking[0];
       }
       
       return null;
     } catch (error) {
+      console.error('Error loading active tracking from IndexedDB:', error);
       
       // Fallback to localStorage
       try {
@@ -316,6 +328,7 @@ export function useFarmingTrackerDB() {
         }
         return null;
       } catch (localStorageError) {
+        console.error('Error loading from localStorage fallback:', localStorageError);
         return null;
       }
     }

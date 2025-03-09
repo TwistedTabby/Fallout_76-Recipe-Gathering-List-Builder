@@ -250,20 +250,20 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                   </div>
                   <div className="stop-actions">
                     <button 
-                      className="btn-icon-sm btn-primary"
+                      className="btn-icon-sm btn-primary reorder-button"
                       onClick={() => handleMoveStopUp(index)}
                       disabled={index === 0}
-                      aria-label="Move stop up"
-                      title="Move Up"
+                      aria-label="Reorder: Move stop up"
+                      title="Reorder: Move Up"
                     >
                       <FontAwesomeIcon icon={faArrowUp} />
                     </button>
                     <button 
-                      className="btn-icon-sm btn-secondary"
+                      className="btn-icon-sm btn-secondary reorder-button"
                       onClick={() => handleMoveStopDown(index)}
                       disabled={index === editedRoute.stops.length - 1}
-                      aria-label="Move stop down"
-                      title="Move Down"
+                      aria-label="Reorder: Move stop down"
+                      title="Reorder: Move Down"
                     >
                       <FontAwesomeIcon icon={faArrowDown} />
                     </button>

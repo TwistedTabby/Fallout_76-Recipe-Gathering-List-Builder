@@ -347,15 +347,15 @@ body {
 }
 
 .edit-button {
-  background-color: var(--main-accent);
-  color: var(--dark-contrast);
-  border: 2px solid var(--main-accent);
+  background-color: var(--secondary-accent);
+  color: var(--light-contrast);
+  border: 2px solid var(--secondary-accent) !important;
 }
 
 .edit-button:hover {
   background-color: var(--light-contrast);
   color: var(--dark-contrast);
-  border: 2px solid var(--main-accent);
+  border: 2px solid var(--main-accent) !important;
 }
 
 .delete-button {
@@ -477,6 +477,12 @@ body {
 .stop-actions {
   display: flex;
   gap: 0.5rem;
+}
+
+.reorder-button {
+  background-color: var(--secondary-accent);
+  color: var(--light-contrast);
+  border: 2px solid var(--secondary-accent) !important;
 }
 
 /* ===== ROUTE TRACKER STYLES ===== */

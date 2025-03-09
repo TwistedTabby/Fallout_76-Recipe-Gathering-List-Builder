@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faPlus, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { faSave, faTimes, faPlus, faEdit, faTrash, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
 import { Stop, Item, ItemType } from '../types/farmingTracker';
 import { v4 as uuidv4 } from 'uuid';
 import { DEFAULT_ITEM_TYPES, ITEM_TYPES_REQUIRING_NAME, ITEM_TYPES_WITH_DEFAULT_NAME, ITEM_TYPES_WITHOUT_QUANTITY } from '../types/farmingTracker';
@@ -188,6 +188,42 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
     const updatedStop = {
       ...editedStop,
       items: editedStop.items.filter(item => item.id !== itemId)
+    };
+    
+    setEditedStop(updatedStop);
+    onSave(updatedStop, true);
+  };
+
+  // Handle moving an item up in the list
+  const handleMoveItemUp = (index: number) => {
+    if (index === 0) return; // Already at the top
+    
+    const updatedItems = [...editedStop.items];
+    const temp = updatedItems[index];
+    updatedItems[index] = updatedItems[index - 1];
+    updatedItems[index - 1] = temp;
+    
+    const updatedStop = {
+      ...editedStop,
+      items: updatedItems
+    };
+    
+    setEditedStop(updatedStop);
+    onSave(updatedStop, true);
+  };
+
+  // Handle moving an item down in the list
+  const handleMoveItemDown = (index: number) => {
+    if (index === editedStop.items.length - 1) return; // Already at the bottom
+    
+    const updatedItems = [...editedStop.items];
+    const temp = updatedItems[index];
+    updatedItems[index] = updatedItems[index + 1];
+    updatedItems[index + 1] = temp;
+    
+    const updatedStop = {
+      ...editedStop,
+      items: updatedItems
     };
     
     setEditedStop(updatedStop);
@@ -495,7 +531,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           {/* Items List */}
           {editedStop.items.length > 0 ? (
             <ul className="stops-list">
-              {editedStop.items.map(item => (
+              {editedStop.items.map((item, index) => (
                 <li key={item.id} className="stop-item">
                   <div className="stop-info">
                     {!ITEM_TYPES_WITH_DEFAULT_NAME.includes(item.type) && (
@@ -510,6 +546,24 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                     </div>
                   </div>
                   <div className="stop-actions">
+                    <button 
+                      className="btn-icon-sm btn-primary reorder-button"
+                      onClick={() => handleMoveItemUp(index)}
+                      disabled={index === 0}
+                      aria-label="Reorder: Move item up"
+                      title="Move Up"
+                    >
+                      <FontAwesomeIcon icon={faArrowUp} />
+                    </button>
+                    <button 
+                      className="btn-icon-sm btn-secondary reorder-button"
+                      onClick={() => handleMoveItemDown(index)}
+                      disabled={index === editedStop.items.length - 1}
+                      aria-label="Reorder: Move item down"
+                      title="Move Down"
+                    >
+                      <FontAwesomeIcon icon={faArrowDown} />
+                    </button>
                     <button 
                       className="btn-icon-sm edit-button"
                       onClick={() => {

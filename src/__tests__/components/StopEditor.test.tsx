@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import StopEditor from '../../components/StopEditor';
 import { mockRoutes } from '../../testUtils/testHelpers';

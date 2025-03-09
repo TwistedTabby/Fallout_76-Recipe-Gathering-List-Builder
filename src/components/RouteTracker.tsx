@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheck, faTimes, faArrowLeft, faArrowRight } from '@fortawesome/free-solid-svg-icons';
-import { Route, RouteProgress, Item } from '../types/farmingTracker';
+import { faCheck, faTimes, faArrowLeft, faArrowRight, faCheckCircle, faStopwatch, faClipboard } from '@fortawesome/free-solid-svg-icons';
+import { Route, RouteProgress, Stop, Item } from '../types/farmingTracker';
 
 interface RouteTrackerProps {
-  route: Route;
-  tracking: RouteProgress;
-  onUpdateTracking: (tracking: RouteProgress) => void;
+  tracking: RouteProgress & { route: Route };
+  onUpdateTracking: (tracking: RouteProgress & { route: Route }) => void;
+  onUpdateInventory: (inventory: Record<string, number>) => void;
   onComplete: () => void;
   onCancel: () => void;
 }
@@ -15,9 +15,9 @@ interface RouteTrackerProps {
  * Component for tracking progress through a route
  */
 const RouteTracker: React.FC<RouteTrackerProps> = ({
-  route,
   tracking,
   onUpdateTracking,
+  onUpdateInventory,
   onComplete,
   onCancel
 }) => {
@@ -26,7 +26,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
 
   // Get the current stop
-  const currentStop = route?.stops?.[tracking?.currentStopIndex] || null;
+  const currentStop = tracking?.route?.stops?.[tracking?.currentStopIndex] || null;
   
   // Calculate elapsed time
   useEffect(() => {
@@ -51,184 +51,301 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
     
     return () => clearInterval(interval);
   }, [tracking?.startTime]);
-
+  
+  // Update notes in tracking
+  useEffect(() => {
+    if (notes !== tracking?.notes) {
+      onUpdateTracking({
+        ...tracking,
+        notes
+      });
+    }
+  }, [notes, tracking, onUpdateTracking]);
+  
   // Handle notes change
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const newNotes = e.target.value;
-    setNotes(newNotes);
-    onUpdateTracking({
-      ...tracking,
-      notes: newNotes
-    });
+    setNotes(e.target.value);
   };
-
+  
   // Toggle item collected status
   const toggleItemCollected = (itemId: string) => {
-    if (!tracking?.collectedItems) return;
-
-    const newCollectedItems = { ...tracking.collectedItems };
-    newCollectedItems[itemId] = !newCollectedItems[itemId];
+    const updatedCollectedItems = {
+      ...tracking.collectedItems,
+      [itemId]: !tracking.collectedItems[itemId]
+    };
     
+    // Update tracking
     onUpdateTracking({
       ...tracking,
-      collectedItems: newCollectedItems
+      collectedItems: updatedCollectedItems
     });
+    
+    // If the item is collected, update inventory
+    const item = findItemById(itemId);
+    if (item && updatedCollectedItems[itemId]) {
+      // Get current inventory
+      const currentInventory = tracking.inventoryData?.routeInventory || {};
+      
+      // Update inventory with collected item
+      const updatedInventory = {
+        ...currentInventory,
+        [item.name]: (currentInventory[item.name] || 0) + item.quantity
+      };
+      
+      // Call onUpdateInventory with the updated inventory
+      onUpdateInventory(updatedInventory);
+    }
   };
-
-  // Move to the next stop
+  
+  // Helper function to find an item by ID
+  const findItemById = (itemId: string): Item | undefined => {
+    for (const stop of tracking.route.stops) {
+      const item = stop.items.find(item => item.id === itemId);
+      if (item) return item;
+    }
+    return undefined;
+  };
+  
+  // Move to next stop
   const moveToNextStop = () => {
-    if (!route?.stops || tracking.currentStopIndex >= route.stops.length - 1) return;
-
-    onUpdateTracking({
-      ...tracking,
-      currentStopIndex: tracking.currentStopIndex + 1
-    });
+    if (tracking.currentStopIndex < tracking.route.stops.length - 1) {
+      onUpdateTracking({
+        ...tracking,
+        currentStopIndex: tracking.currentStopIndex + 1
+      });
+    }
   };
-
-  // Move to the previous stop
+  
+  // Move to previous stop
   const moveToPreviousStop = () => {
-    if (tracking.currentStopIndex <= 0) return;
-
-    onUpdateTracking({
-      ...tracking,
-      currentStopIndex: tracking.currentStopIndex - 1
-    });
+    if (tracking.currentStopIndex > 0) {
+      onUpdateTracking({
+        ...tracking,
+        currentStopIndex: tracking.currentStopIndex - 1
+      });
+    }
   };
-
+  
   // Calculate progress percentage
   const calculateProgress = () => {
-    if (!route?.stops || route.stops.length === 0) return 0;
+    if (!tracking.route.stops.length) return 0;
     
-    // Count collected items
-    const totalItems = route.stops.reduce((total, stop) => total + (stop.items?.length || 0), 0);
+    const totalItems = tracking.route.stops.reduce((total: number, stop: Stop) => 
+      total + stop.items.length, 0);
+    
     if (totalItems === 0) return 0;
     
-    const collectedCount = tracking?.collectedItems ? Object.values(tracking.collectedItems).filter(Boolean).length : 0;
+    const collectedCount = Object.keys(tracking.collectedItems).length;
     return Math.round((collectedCount / totalItems) * 100);
   };
-
-  // Check if all items in the current stop are collected
+  
+  // Check if all items in current stop are collected
   const areAllCurrentStopItemsCollected = () => {
-    if (!currentStop || !currentStop.items || currentStop.items.length === 0 || !tracking?.collectedItems) return true;
+    if (!currentStop) return false;
     
-    return currentStop.items.every(item => tracking.collectedItems[item.id] === true);
+    return currentStop.items.every((item: Item) => 
+      tracking.collectedItems[item.id]
+    );
   };
-
+  
+  // Get completion status for a stop
+  const getStopCompletionStatus = (stopIndex: number) => {
+    const stop = tracking.route.stops[stopIndex];
+    if (!stop) return 'incomplete';
+    
+    const allCollected = stop.items.every((item: Item) => 
+      tracking.collectedItems[item.id]
+    );
+    
+    if (allCollected) return 'completed';
+    if (stopIndex < tracking.currentStopIndex) return 'skipped';
+    if (stopIndex === tracking.currentStopIndex) return 'current';
+    return 'incomplete';
+  };
+  
   return (
-    <div className="route-tracker">
-      <div className="route-tracker-header">
-        <h2>Tracking: {route?.name}</h2>
-        <div className="route-tracker-stats">
-          <div className="elapsed-time">
-            <span className="stat-label">Elapsed Time:</span>
-            <span className="stat-value">{elapsedTime}</span>
-          </div>
-          <div className="progress-percentage">
-            <span className="stat-label">Progress:</span>
-            <span className="stat-value">{calculateProgress()}%</span>
-          </div>
+    <div className="card route-tracker">
+      <div className="card-header route-tracker-header">
+        <h2>Tracking: {tracking.route.name}</h2>
+        <div className="route-tracker-actions">
+          <button 
+            className="btn btn-outline"
+            onClick={onCancel}
+          >
+            <FontAwesomeIcon icon={faTimes} /> Cancel
+          </button>
+          <button 
+            className="btn btn-success"
+            onClick={onComplete}
+          >
+            <FontAwesomeIcon icon={faCheck} /> Complete
+          </button>
         </div>
       </div>
-
-      <div className="route-tracker-content">
-        {!route?.stops || route.stops.length === 0 ? (
-          <div className="no-stops-message">
-            <p>This route has no stops defined. You can complete it or cancel tracking.</p>
-          </div>
-        ) : (
-          <>
-            <div className="stop-navigation">
-              <button 
-                className="nav-button prev-button" 
-                onClick={moveToPreviousStop}
-                disabled={tracking.currentStopIndex === 0}
-              >
-                <FontAwesomeIcon icon={faArrowLeft} /> Previous Stop
-              </button>
-              <div className="stop-indicator">
-                Stop {tracking.currentStopIndex + 1} of {route.stops.length}
+      
+      <div className="card-body">
+        {/* Progress information */}
+        <div className="tracking-info mb-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="tracking-stat p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center mb-1">
+                <FontAwesomeIcon icon={faStopwatch} className="mr-2 text-secondary-accent" />
+                <span className="font-semibold">Elapsed Time</span>
               </div>
-              <button 
-                className="nav-button next-button" 
-                onClick={moveToNextStop}
-                disabled={tracking.currentStopIndex === route.stops.length - 1}
-              >
-                Next Stop <FontAwesomeIcon icon={faArrowRight} />
-              </button>
+              <div className="text-xl font-mono">{elapsedTime}</div>
             </div>
-
-            {currentStop && (
-              <div className="current-stop">
-                <div className="stop-header">
-                  <h3>{currentStop.name}</h3>
-                  {areAllCurrentStopItemsCollected() && (
-                    <span className="all-collected-badge">
-                      <FontAwesomeIcon icon={faCheck} /> All Items Collected
-                    </span>
-                  )}
+            
+            <div className="tracking-stat p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center mb-1">
+                <FontAwesomeIcon icon={faCheckCircle} className="mr-2 text-secondary-accent" />
+                <span className="font-semibold">Progress</span>
+              </div>
+              <div className="text-xl">{calculateProgress()}%</div>
+              <div className="progress-bar-container mt-1">
+                <div 
+                  className="progress-bar" 
+                  style={{ width: `${calculateProgress()}%` }}
+                ></div>
+              </div>
+            </div>
+            
+            <div className="tracking-stat p-3 bg-gray-50 rounded-lg">
+              <div className="flex items-center mb-1">
+                <FontAwesomeIcon icon={faClipboard} className="mr-2 text-secondary-accent" />
+                <span className="font-semibold">Current Stop</span>
+              </div>
+              <div className="text-xl">
+                {tracking.currentStopIndex + 1} of {tracking.route.stops.length}
+              </div>
+            </div>
+          </div>
+        </div>
+        
+        {/* Current stop */}
+        {currentStop && (
+          <div className="current-stop mb-4">
+            <div className="card">
+              <div className="card-header">
+                <h3>Current Stop: {currentStop.name}</h3>
+                <div className="flex space-x-2">
+                  <button 
+                    className="btn btn-sm btn-secondary"
+                    onClick={moveToPreviousStop}
+                    disabled={tracking.currentStopIndex === 0}
+                  >
+                    <FontAwesomeIcon icon={faArrowLeft} /> Previous
+                  </button>
+                  <button 
+                    className="btn btn-sm btn-secondary"
+                    onClick={moveToNextStop}
+                    disabled={tracking.currentStopIndex === tracking.route.stops.length - 1}
+                  >
+                    Next <FontAwesomeIcon icon={faArrowRight} />
+                  </button>
                 </div>
-                
+              </div>
+              
+              <div className="card-body">
                 {currentStop.description && (
-                  <p className="stop-description">{currentStop.description}</p>
+                  <p className="mb-4">{currentStop.description}</p>
                 )}
-
-                {!currentStop.items || currentStop.items.length === 0 ? (
-                  <p className="no-items-message">This stop has no items defined.</p>
+                
+                <h4 className="font-semibold mb-2">Items to Collect:</h4>
+                {currentStop.items.length === 0 ? (
+                  <p className="text-gray-500">No items to collect at this stop.</p>
                 ) : (
-                  <ul className="items-list">
+                  <ul className="space-y-2">
                     {currentStop.items.map(item => (
                       <li 
-                        key={item.id} 
-                        className={`item ${tracking?.collectedItems && tracking.collectedItems[item.id] ? 'collected' : ''}`}
-                        onClick={() => toggleItemCollected(item.id)}
+                        key={item.id}
+                        className="flex items-center p-2 rounded-lg hover:bg-gray-50"
                       >
-                        <div className="item-checkbox">
-                          {tracking?.collectedItems && tracking.collectedItems[item.id] ? (
-                            <FontAwesomeIcon icon={faCheck} />
-                          ) : null}
-                        </div>
-                        <div className="item-details">
-                          <span className="item-name">{item.name}</span>
-                          <span className="item-type">{item.type}</span>
-                          {item.description && (
-                            <span className="item-description">{item.description}</span>
-                          )}
-                        </div>
-                        <div className="item-quantity">
-                          {item.quantity > 1 ? `x${item.quantity}` : ''}
-                        </div>
+                        <input 
+                          type="checkbox"
+                          id={`item-${item.id}`}
+                          checked={!!tracking.collectedItems[item.id]}
+                          onChange={() => toggleItemCollected(item.id)}
+                          className="mr-3 h-5 w-5"
+                        />
+                        <label 
+                          htmlFor={`item-${item.id}`}
+                          className={`flex-1 cursor-pointer ${tracking.collectedItems[item.id] ? 'line-through text-gray-500' : ''}`}
+                        >
+                          {item.name}
+                          {item.quantity > 1 && ` (${item.quantity})`}
+                        </label>
                       </li>
                     ))}
                   </ul>
                 )}
               </div>
-            )}
-          </>
+              
+              {areAllCurrentStopItemsCollected() && tracking.currentStopIndex < tracking.route.stops.length - 1 && (
+                <div className="card-footer">
+                  <button 
+                    className="btn btn-primary"
+                    onClick={moveToNextStop}
+                  >
+                    Next Stop <FontAwesomeIcon icon={faArrowRight} />
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
         )}
-
+        
+        {/* All stops */}
+        <div className="all-stops mb-4">
+          <h3 className="font-semibold mb-2">All Stops</h3>
+          <ul className="tracker-stops-list">
+            {tracking.route.stops.map((stop, index) => {
+              const status = getStopCompletionStatus(index);
+              return (
+                <li 
+                  key={stop.id}
+                  className={`tracker-stop-item ${status}`}
+                  onClick={() => onUpdateTracking({
+                    ...tracking,
+                    currentStopIndex: index
+                  })}
+                >
+                  <div className="tracker-stop-info">
+                    <div className="tracker-stop-name">
+                      {index + 1}. {stop.name}
+                    </div>
+                    <div className="tracker-stop-description">
+                      {stop.items.length} items - 
+                      {stop.items.filter(item => tracking.collectedItems[item.id]).length} collected
+                    </div>
+                  </div>
+                  <div className="tracker-stop-actions">
+                    {status === 'completed' && (
+                      <span className="text-green-500">
+                        <FontAwesomeIcon icon={faCheckCircle} />
+                      </span>
+                    )}
+                    {status === 'current' && (
+                      <span className="text-blue-500">
+                        Current
+                      </span>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+        
+        {/* Notes */}
         <div className="notes-section">
-          <h3>Notes</h3>
+          <h3 className="font-semibold mb-2">Notes</h3>
           <textarea
+            className="form-control"
             value={notes}
             onChange={handleNotesChange}
             placeholder="Add notes about your run here..."
             rows={4}
           />
-        </div>
-
-        <div className="tracker-actions">
-          <button 
-            className="cancel-button" 
-            onClick={onCancel}
-          >
-            <FontAwesomeIcon icon={faTimes} /> Cancel Tracking
-          </button>
-          <button 
-            className="complete-button" 
-            onClick={onComplete}
-          >
-            <FontAwesomeIcon icon={faCheck} /> Complete Route
-          </button>
         </div>
       </div>
     </div>

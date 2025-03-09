@@ -11,7 +11,8 @@ import RouteTracker from './RouteTracker';
 import ImportExportTools from './tools/ImportExportTools';
 import InventoryTracker from './InventoryTracker';
 import RouteStatistics from './RouteStatistics';
-import { Route, RouteProgress } from '../types/farmingTracker';
+import StopEditor from './StopEditor';
+import { Route, RouteProgress, Stop } from '../types/farmingTracker';
 
 /**
  * Main container component for the Farming Tracker application
@@ -45,7 +46,10 @@ const FarmingTrackerApp: React.FC = () => {
   const [activeTracking, setActiveTracking] = useState<RouteProgress | null>(null);
 
   // State for view management
-  const [view, setView] = useState<'list' | 'editor' | 'tracker' | 'stats'>('list');
+  const [view, setView] = useState<'list' | 'editor' | 'stopEditor' | 'tracker' | 'stats'>('list');
+  
+  // State for the stop being edited
+  const [currentStop, setCurrentStop] = useState<Stop | null>(null);
   
   // State for showing import/export tools
   const [showTools, setShowTools] = useState(false);
@@ -110,8 +114,14 @@ const FarmingTrackerApp: React.FC = () => {
 
   // Handle route creation
   const handleCreateRoute = () => {
+    console.log("Creating new route");
+    
+    // Generate a unique ID for the new route
+    const routeId = uuidv4();
+    console.log("Generated route ID:", routeId);
+    
     const newRoute: Route = {
-      id: uuidv4(),
+      id: routeId,
       name: 'New Route',
       description: '',
       stops: [],
@@ -119,8 +129,26 @@ const FarmingTrackerApp: React.FC = () => {
       autoInventoryChecks: false
     };
 
+    // Save the new route to the database
+    console.log("Saving new route to database:", newRoute);
+    saveRoute(newRoute);
+    
+    // Add the new route to the routes array
+    setRoutes(prevRoutes => [...prevRoutes, newRoute]);
+    
+    // Set as current route
     setCurrentRoute(newRoute);
+    saveCurrentRouteId(newRoute.id);
+    
+    // Switch to editor view
     setView('editor');
+    
+    // Show a notification
+    showNotification({
+      type: 'success',
+      message: 'New route created successfully',
+      duration: 3000
+    });
   };
 
   // Handle route deletion
@@ -228,6 +256,209 @@ const FarmingTrackerApp: React.FC = () => {
     }
   };
 
+  // Handle adding a stop to a route
+  const handleAddStop = (routeId: string) => {
+    console.log("FarmingTrackerApp.handleAddStop called with routeId:", routeId);
+    console.log("currentRoute:", currentRoute);
+    console.log("routes:", routes);
+    
+    // Create a new stop
+    const newStop: Stop = {
+      id: uuidv4(),
+      name: 'New Stop',
+      description: '',
+      items: [],
+      collectData: false
+    };
+
+    // First, check if the routeId matches the currentRoute
+    if (currentRoute && (currentRoute.id === routeId)) {
+      console.log("Using currentRoute directly");
+      
+      // Add the stop to the current route
+      const updatedRoute = {
+        ...currentRoute,
+        stops: [...currentRoute.stops, newStop]
+      };
+
+      // Immediately save the updated route to the database
+      saveRoute(updatedRoute);
+      
+      // Update routes list
+      setRoutes(prevRoutes => {
+        const index = prevRoutes.findIndex(r => r.id === routeId);
+        if (index >= 0) {
+          return [
+            ...prevRoutes.slice(0, index),
+            updatedRoute,
+            ...prevRoutes.slice(index + 1)
+          ];
+        }
+        return [...prevRoutes, updatedRoute]; // Add the route if it doesn't exist in the array
+      });
+      
+      // Update current route
+      setCurrentRoute(updatedRoute);
+      
+      // Set the current stop and switch to stop editor view
+      setCurrentStop(newStop);
+      setView('stopEditor');
+      
+      // Show a success notification
+      showNotification({
+        type: 'success',
+        message: 'Stop added successfully. Now you can edit its details.',
+        duration: 3000
+      });
+      
+      return;
+    }
+    
+    // If we get here, try to find the route in the routes array
+    let route = routes.find(r => r.id === routeId);
+    console.log("Route found in routes array:", !!route);
+    
+    // If route is still not found, show an error and return
+    if (!route) {
+      console.log("Route not found, showing error");
+      showNotification({
+        type: 'error',
+        message: 'Route not found',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Add the stop to the route
+    const updatedRoute = {
+      ...route,
+      stops: [...route.stops, newStop]
+    };
+
+    // Immediately save the updated route to the database
+    saveRoute(updatedRoute);
+    
+    // Update routes list and current route in state
+    setRoutes(prevRoutes => {
+      const index = prevRoutes.findIndex(r => r.id === routeId);
+      if (index >= 0) {
+        return [
+          ...prevRoutes.slice(0, index),
+          updatedRoute,
+          ...prevRoutes.slice(index + 1)
+        ];
+      }
+      return [...prevRoutes, updatedRoute]; // Add the route if it doesn't exist in the array
+    });
+    
+    // Update current route if it was the one modified
+    if (currentRoute && currentRoute.id === routeId) {
+      setCurrentRoute(updatedRoute);
+    }
+
+    // Set the current stop and switch to stop editor view
+    setCurrentStop(newStop);
+    setView('stopEditor');
+    
+    // Show a success notification
+    showNotification({
+      type: 'success',
+      message: 'Stop added successfully. Now you can edit its details.',
+      duration: 3000
+    });
+  };
+
+  // Handle editing a stop
+  const handleEditStop = (routeId: string, stopId: string) => {
+    // Find the route - first check the routes array, then fall back to currentRoute
+    let route = routes.find(r => r.id === routeId);
+    
+    // If route is not found in the routes array but matches currentRoute's ID, use currentRoute
+    if (!route && currentRoute && currentRoute.id === routeId) {
+      route = currentRoute;
+    }
+    
+    // If route is still not found, show an error and return
+    if (!route) {
+      showNotification({
+        type: 'error',
+        message: 'Route not found',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Find the stop
+    const stop = route.stops.find(s => s.id === stopId);
+    if (!stop) {
+      showNotification({
+        type: 'error',
+        message: 'Stop not found',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Set the current stop and switch to stop editor view
+    setCurrentStop(stop);
+    setView('stopEditor');
+  };
+
+  // Handle deleting a stop
+  const handleDeleteStop = (routeId: string, stopId: string) => {
+    // Find the route - first check the routes array, then fall back to currentRoute
+    let route = routes.find(r => r.id === routeId);
+    
+    // If route is not found in the routes array but matches currentRoute's ID, use currentRoute
+    if (!route && currentRoute && currentRoute.id === routeId) {
+      route = currentRoute;
+    }
+    
+    // If route is still not found, show an error and return
+    if (!route) {
+      showNotification({
+        type: 'error',
+        message: 'Route not found',
+        duration: 3000
+      });
+      return;
+    }
+
+    // Remove the stop from the route
+    const updatedRoute = {
+      ...route,
+      stops: route.stops.filter(s => s.id !== stopId)
+    };
+
+    // Immediately save the updated route to the database
+    saveRoute(updatedRoute);
+    
+    // Update routes list and current route in state
+    setRoutes(prevRoutes => {
+      const index = prevRoutes.findIndex(r => r.id === routeId);
+      if (index >= 0) {
+        return [
+          ...prevRoutes.slice(0, index),
+          updatedRoute,
+          ...prevRoutes.slice(index + 1)
+        ];
+      }
+      return [...prevRoutes, updatedRoute]; // Add the route if it doesn't exist in the array
+    });
+    
+    // Update current route if it was the one modified
+    if (currentRoute && currentRoute.id === routeId) {
+      setCurrentRoute(updatedRoute);
+    }
+    
+    // Show a notification
+    showNotification({
+      type: 'success',
+      message: 'Stop deleted successfully',
+      duration: 3000
+    });
+  };
+
   // Handle starting route tracking
   const handleStartTracking = (routeId: string) => {
     const route = routes.find(r => r.id === routeId);
@@ -259,9 +490,11 @@ const FarmingTrackerApp: React.FC = () => {
   };
 
   // Handle updating tracking
-  const handleUpdateTracking = (updatedTracking: RouteProgress) => {
-    saveActiveTracking(updatedTracking);
-    setActiveTracking(updatedTracking);
+  const handleUpdateTracking = (updatedTracking: RouteProgress & { route: Route }) => {
+    // Extract the route property before saving
+    const { route, ...trackingData } = updatedTracking;
+    saveActiveTracking(trackingData);
+    setActiveTracking(trackingData);
   };
 
   // Handle updating inventory
@@ -471,162 +704,288 @@ const FarmingTrackerApp: React.FC = () => {
     setShowInventory(!showInventory);
   };
 
-  // Toggle statistics view
-  const toggleStats = () => {
-    setView(view === 'stats' ? 'list' : 'stats');
-  };
-
-  // Render loading state
-  if (isLoading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div className="loading loading-spinner loading-lg"></div>
-      </div>
-    );
-  }
-
-  // Render error state
-  if (error) {
-    return (
-      <div className="flex flex-col justify-center items-center h-screen">
-        <div className="alert alert-error">
-          <span>Error loading data: {error}</span>
-        </div>
-        <button className="btn btn-primary mt-4" onClick={loadData}>
-          Retry
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <div className="farming-tracker-app p-4">
-      {/* Header */}
-      <div className="flex flex-wrap justify-between items-center mb-4">
-        <h1 className="text-2xl font-bold">Farming Tracker</h1>
-        
-        <div className="flex gap-2">
-          {view === 'tracker' && activeTracking && (
-            <>
-              <button 
-                className="btn btn-sm btn-primary"
-                onClick={toggleInventory}
-              >
-                {showInventory ? 'Hide Inventory' : 'Show Inventory'}
-              </button>
-              <button 
-                className="btn btn-sm btn-success"
-                onClick={handleCompleteTracking}
-              >
-                Complete
-              </button>
-              <button 
-                className="btn btn-sm btn-warning"
-                onClick={handleCancelTracking}
-              >
-                Cancel
-              </button>
-            </>
-          )}
-          
-          {view === 'editor' && (
-            <button 
-              className="btn btn-sm btn-warning"
-              onClick={() => setView('list')}
-            >
-              Back to List
-            </button>
-          )}
-          
-          {(view === 'list' || view === 'stats') && (
-            <>
-              <button 
-                className="btn btn-sm btn-primary"
-                onClick={toggleStats}
-              >
-                {view === 'stats' ? 'Show Routes' : 'Show Stats'}
-              </button>
-              <button 
-                className="btn btn-sm btn-secondary"
-                onClick={toggleTools}
-              >
-                {showTools ? 'Hide Tools' : 'Import/Export'}
-              </button>
-            </>
-          )}
-        </div>
-      </div>
-      
-      {/* Import/Export Tools */}
-      {showTools && (
-        <div className="mb-4">
-          <ImportExportTools
-            routes={routes}
-            currentRouteId={currentRoute?.id || null}
-            activeTracking={activeTracking}
-            onImport={handleImportData}
-          />
-        </div>
-      )}
-      
-      {/* Main Content */}
-      <div className="main-content">
-        {view === 'list' && (
-          <RouteList
-            routes={routes}
-            currentRouteId={currentRoute?.id || null}
-            onSelectRoute={handleSelectRoute}
-            onDeleteRoute={handleDeleteRoute}
-            onDuplicateRoute={handleDuplicateRoute}
-            onCreateRoute={handleCreateRoute}
-            onStartTracking={handleStartTracking}
-            onEditRoute={handleEditRoute}
-          />
-        )}
-        
-        {view === 'stats' && (
-          <RouteStatistics
-            routes={routes}
-            selectedRouteId={currentRoute?.id || null}
-          />
-        )}
-        
-        {view === 'editor' && currentRoute && (
-          <RouteEditor
-            route={currentRoute}
-            onSave={handleUpdateRoute}
-            onCancel={() => setView('list')}
-          />
-        )}
-        
-        {view === 'tracker' && activeTracking && (
-          <div className="grid grid-cols-1 gap-4">
-            <RouteTracker
-              activeTracking={activeTracking}
-              routes={routes}
-              onUpdateTracking={handleUpdateTracking}
-            />
-            
-            {showInventory && (
-              <InventoryTracker
-                activeTracking={activeTracking}
-                onUpdateInventory={handleUpdateInventory}
-              />
-            )}
-          </div>
-        )}
-      </div>
-      
-      {/* Notification */}
+    <div className="farming-tracker">
+      {/* Notification component */}
       {notification && (
-        <Notification
-          notification={notification}
-          onClose={hideNotification}
+        <Notification 
+          message={notification.message} 
+          type={notification.type} 
+          onClose={hideNotification} 
         />
       )}
       
-      {/* Confirm Dialog */}
+      {/* Confirm dialog */}
       <ConfirmDialog {...dialogProps} />
+      
+      {/* Loading state */}
+      {isLoading && (
+        <div className="loading-overlay">
+          <div className="loading-spinner"></div>
+          <p>Loading your routes...</p>
+        </div>
+      )}
+      
+      {/* Error state */}
+      {error && (
+        <div className="error-message card p-4 mb-4 bg-red-100 border border-red-300 rounded-lg">
+          <h3 className="text-red-700 font-semibold mb-2">Error</h3>
+          <p className="text-red-600">Error loading data: {error.toString()}</p>
+          {!isStorageReliable && (
+            <p className="mt-2 text-red-600">
+              Your browser's storage may be restricted. In private browsing mode, data will be lost when you close the browser.
+            </p>
+          )}
+          <button 
+            className="btn btn-primary mt-3"
+            onClick={loadData}
+          >
+            Retry
+          </button>
+        </div>
+      )}
+      
+      {/* Main content */}
+      <div className="farming-tracker-container">
+        {/* View navigation */}
+        <div className="view-navigation mb-4">
+          <div className="flex space-x-2 border-b border-gray-200">
+            <button 
+              className={`btn py-2 px-4 ${view === 'list' ? 'border-b-2 border-main-accent font-bold' : ''}`}
+              onClick={() => setView('list')}
+              disabled={!!activeTracking}
+            >
+              Route Management
+            </button>
+            {currentRoute && (
+              <button 
+                className={`btn py-2 px-4 ${view === 'editor' ? 'border-b-2 border-main-accent font-bold' : ''}`}
+                onClick={() => setView('editor')}
+                disabled={!!activeTracking}
+              >
+                Edit Route
+              </button>
+            )}
+            {activeTracking && (
+              <button 
+                className={`btn py-2 px-4 ${view === 'tracker' ? 'border-b-2 border-main-accent font-bold' : ''}`}
+                onClick={() => setView('tracker')}
+              >
+                Tracking
+              </button>
+            )}
+            <button 
+              className={`btn py-2 px-4 ${view === 'stats' ? 'border-b-2 border-main-accent font-bold' : ''}`}
+              onClick={() => setView('stats')}
+              disabled={!!activeTracking}
+            >
+              Statistics
+            </button>
+          </div>
+        </div>
+        
+        {/* View content */}
+        <div className="view-content">
+          {view === 'list' && (
+            <div className="route-management-view">
+              <RouteList 
+                routes={routes}
+                currentRouteId={currentRoute?.id || null}
+                onSelectRoute={handleSelectRoute}
+                onCreateRoute={handleCreateRoute}
+                onEditRoute={handleEditRoute}
+                onDeleteRoute={handleDeleteRoute}
+                onStartTracking={handleStartTracking}
+                onDuplicateRoute={handleDuplicateRoute}
+              />
+              
+              <div className="mt-4 flex justify-end space-x-2">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={toggleTools}
+                >
+                  Import/Export
+                </button>
+                <button 
+                  className="btn btn-secondary"
+                  onClick={toggleInventory}
+                >
+                  Inventory
+                </button>
+              </div>
+              
+              {showTools && (
+                <div className="card mt-4">
+                  <div className="card-header">
+                    <h2>Import/Export Tools</h2>
+                  </div>
+                  <div className="card-body">
+                    <ImportExportTools 
+                      routes={routes}
+                      currentRouteId={currentRoute?.id || null}
+                      activeTracking={activeTracking}
+                      onImportData={handleImportData}
+                      onConfirm={confirm}
+                      onNotify={showNotification}
+                    />
+                  </div>
+                </div>
+              )}
+              
+              {showInventory && (
+                <div className="card mt-4">
+                  <div className="card-header">
+                    <h2>Inventory Tracker</h2>
+                  </div>
+                  <div className="card-body">
+                    <InventoryTracker 
+                      activeTracking={activeTracking || {
+                        routeId: '',
+                        startTime: Date.now(),
+                        currentStopIndex: 0,
+                        collectedItems: {},
+                        notes: ''
+                      }}
+                      onUpdateInventory={handleUpdateInventory}
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+          
+          {view === 'editor' && currentRoute && (
+            <RouteEditor 
+              route={currentRoute}
+              onSave={handleUpdateRoute}
+              onCancel={() => setView('list')}
+              onAddStop={handleAddStop}
+              onEditStop={handleEditStop}
+              onDeleteStop={handleDeleteStop}
+            />
+          )}
+          
+          {view === 'stopEditor' && currentStop && currentRoute && (
+            <StopEditor 
+              stop={currentStop}
+              onSave={(updatedStop, isAutoSave = false) => {
+                // Find the route
+                if (!currentRoute) return;
+
+                // Update the stops array with the updated stop
+                const updatedStops = currentRoute.stops.map(stop => 
+                  stop.id === updatedStop.id ? updatedStop : stop
+                );
+
+                // Create the updated route
+                const updatedRoute = {
+                  ...currentRoute,
+                  stops: updatedStops
+                };
+
+                // Save the updated route
+                saveRoute(updatedRoute);
+                
+                // Update routes list
+                setRoutes(prevRoutes => {
+                  const index = prevRoutes.findIndex(r => r.id === currentRoute.id);
+                  if (index >= 0) {
+                    return [
+                      ...prevRoutes.slice(0, index),
+                      updatedRoute,
+                      ...prevRoutes.slice(index + 1)
+                    ];
+                  }
+                  return prevRoutes;
+                });
+                
+                // Update current route
+                setCurrentRoute(updatedRoute);
+                
+                // Only return to route editor view if it's not an auto-save
+                if (!isAutoSave) {
+                  setCurrentStop(null);
+                  setView('editor');
+                  
+                  // Show notification
+                  showNotification({
+                    type: 'success',
+                    message: 'Stop updated successfully',
+                    duration: 3000
+                  });
+                }
+              }}
+              onCancel={() => {
+                setCurrentStop(null);
+                setView('editor');
+              }}
+            />
+          )}
+          
+          {view === 'tracker' && activeTracking && (
+            <>
+              <RouteTracker 
+                tracking={{
+                  ...activeTracking,
+                  route: routes.find(r => r.id === activeTracking.routeId) || {
+                    id: '',
+                    name: 'Unknown Route',
+                    description: '',
+                    stops: []
+                  }
+                }}
+                onUpdateTracking={handleUpdateTracking}
+                onUpdateInventory={handleUpdateInventory}
+                onComplete={handleCompleteTracking}
+                onCancel={handleCancelTracking}
+              />
+              
+              <div className="mt-4 flex justify-end">
+                <button 
+                  className="btn btn-secondary"
+                  onClick={toggleInventory}
+                >
+                  {showInventory ? 'Hide Inventory' : 'Show Inventory'}
+                </button>
+              </div>
+              
+              {showInventory && (
+                <div className="card mt-4">
+                  <div className="card-header">
+                    <h2>Inventory Tracker</h2>
+                  </div>
+                  <div className="card-body">
+                    <InventoryTracker 
+                      activeTracking={activeTracking || {
+                        routeId: '',
+                        startTime: Date.now(),
+                        currentStopIndex: 0,
+                        collectedItems: {},
+                        notes: ''
+                      }}
+                      onUpdateInventory={handleUpdateInventory}
+                    />
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+          
+          {view === 'stats' && (
+            <div className="card">
+              <div className="card-header">
+                <h2>Route Statistics</h2>
+              </div>
+              <div className="card-body">
+                <RouteStatistics 
+                  routes={routes} 
+                  selectedRouteId={currentRoute?.id || null}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
     </div>
   );
 };

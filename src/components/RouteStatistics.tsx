@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMapMarkedAlt, faStopwatch, faCheckCircle, faListAlt, faBoxes } from '@fortawesome/free-solid-svg-icons';
+import { faMapMarkedAlt, faCheckCircle, faListAlt, faBoxes } from '@fortawesome/free-solid-svg-icons';
 import { Route } from '../types/farmingTracker';
 
 interface RouteStatisticsProps {

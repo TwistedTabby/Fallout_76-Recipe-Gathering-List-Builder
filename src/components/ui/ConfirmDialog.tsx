@@ -6,6 +6,7 @@ export interface ConfirmOptions {
   confirmText?: string;
   cancelText?: string;
   confirmButtonClass?: string;
+  showCancel?: boolean;
 }
 
 interface ConfirmDialogProps {

@@ -13,7 +13,7 @@ interface ImportExportToolsProps {
     activeTracking: RouteProgress | null
   ) => void;
   onConfirm: (message: string) => Promise<boolean>;
-  onNotify: (message: string, type: 'success' | 'error' | 'info') => void;
+  onNotify: (message: string, type: 'success' | 'error' | 'info' | 'warning') => void;
 }
 
 /**

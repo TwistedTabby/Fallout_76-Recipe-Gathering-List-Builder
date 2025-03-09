@@ -104,3 +104,6 @@ config.dev.js
 
 # Additional changes from the code block
 lerna-debug.log*
+
+# test results
+results.json

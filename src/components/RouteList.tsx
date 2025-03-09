@@ -1,6 +1,6 @@
 import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faPlay, faEdit, faTrash, faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faPlay, faEdit, faTrash, faPlus, faCopy } from '@fortawesome/free-solid-svg-icons';
 import { Route } from '../types/farmingTracker';
 
 interface RouteListProps {
@@ -28,79 +28,92 @@ const RouteList: React.FC<RouteListProps> = ({
   onDuplicateRoute
 }) => {
   return (
-    <div className="route-list-container">
-      <div className="route-list-header">
+    <div className="card route-list-container">
+      <div className="card-header route-list-header">
         <h2>Your Routes</h2>
         <button 
-          className="create-route-button"
+          className="btn btn-primary create-route-button"
           onClick={onCreateRoute}
         >
           <FontAwesomeIcon icon={faPlus} /> Create New Route
         </button>
       </div>
       
-      {routes.length === 0 ? (
-        <div className="no-routes-message">
-          <p>You don't have any routes yet. Create your first route to get started!</p>
-        </div>
-      ) : (
-        <ul className="route-list">
-          {routes.map(route => (
-            <li 
-              key={route.id} 
-              className={`route-item ${currentRouteId === route.id ? 'active' : ''}`}
-              onClick={() => onSelectRoute(route.id)}
-            >
-              <div className="route-item-content">
-                <div className="route-item-info">
-                  <h3 className="route-name">{route.name}</h3>
-                  <p className="route-description">{route.description}</p>
-                  <div className="route-stats">
-                    <span className="route-stops-count">{route.stops.length} stops</span>
-                    {route.completedRuns !== undefined && route.completedRuns > 0 && (
-                      <span className="route-completed-runs">
-                        {route.completedRuns} {route.completedRuns === 1 ? 'run' : 'runs'} completed
-                      </span>
-                    )}
+      <div className="card-body">
+        {routes.length === 0 ? (
+          <div className="no-routes-message p-4 text-center bg-gray-50 rounded-lg">
+            <p className="text-gray-600">You don't have any routes yet. Create your first route to get started!</p>
+          </div>
+        ) : (
+          <ul className="route-list">
+            {routes.map(route => (
+              <li 
+                key={route.id} 
+                className={`route-item ${currentRouteId === route.id ? 'active' : ''}`}
+              >
+                <div 
+                  className="route-info"
+                  onClick={() => onSelectRoute(route.id)}
+                >
+                  <div className="route-name">{route.name}</div>
+                  <div className="route-meta">
+                    <span>{route.stops.length} stops</span>
+                    <span>{route.completedRuns || 0} runs</span>
                   </div>
                 </div>
-                <div className="route-item-actions">
+                <div className="route-actions">
                   <button 
-                    className="route-action-button route-edit-button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onEditRoute(route.id);
-                    }}
-                    title="Edit Route"
-                  >
-                    <FontAwesomeIcon icon={faEdit} />
-                  </button>
-                  <button 
-                    className="route-action-button route-start-button"
+                    className="btn-icon-sm start-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onStartTracking(route.id);
                     }}
+                    aria-label="Start tracking this route"
                     title="Start Tracking"
                   >
                     <FontAwesomeIcon icon={faPlay} />
                   </button>
                   <button 
-                    className="route-action-button route-delete-button"
+                    className="btn-icon-sm edit-button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditRoute(route.id);
+                    }}
+                    aria-label="Edit this route"
+                    title="Edit Route"
+                  >
+                    <FontAwesomeIcon icon={faEdit} />
+                  </button>
+                  {onDuplicateRoute && (
+                    <button 
+                      className="btn-icon-sm btn-secondary"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onDuplicateRoute(route.id);
+                      }}
+                      aria-label="Duplicate this route"
+                      title="Duplicate Route"
+                    >
+                      <FontAwesomeIcon icon={faCopy} />
+                    </button>
+                  )}
+                  <button 
+                    className="btn-icon-sm delete-button"
                     onClick={(e) => {
                       e.stopPropagation();
                       onDeleteRoute(route.id);
                     }}
+                    aria-label="Delete this route"
                     title="Delete Route"
                   >
                     <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
     </div>
   );
 };

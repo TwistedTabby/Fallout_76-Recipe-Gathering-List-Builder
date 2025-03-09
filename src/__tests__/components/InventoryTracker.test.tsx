@@ -1,14 +1,11 @@
-import React from 'react';
-import { render, screen, fireEvent, within } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import InventoryTracker from '../../components/InventoryTracker';
 import { mockActiveTracking } from '../../testUtils/testHelpers';
 
 // Mock FontAwesomeIcon
 jest.mock('@fortawesome/react-fontawesome', () => ({
-  FontAwesomeIcon: ({ icon }) => {
-    // Use the icon object to determine which icon to render
-    const iconName = icon.iconName || '';
-    return <span data-testid={`icon-${iconName}`} />;
+  FontAwesomeIcon: ({ icon }: { icon: any }) => {
+    return <span data-testid={`icon-${icon.iconName || 'unknown'}`}></span>;
   }
 }));
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import FarmingTrackerApp from '../../components/FarmingTrackerApp';
 import { useFarmingTrackerDB } from '../../hooks/useFarmingTrackerDB';
@@ -53,8 +52,13 @@ jest.mock('../../components/RouteEditor', () => ({
   __esModule: true,
   default: (props: any) => (
     <div data-testid="route-editor">
-      <button onClick={() => props.onSave(props.route)}>Save Route</button>
-      <button onClick={props.onCancel}>Cancel</button>
+      <input 
+        type="text" 
+        data-testid="route-name-input"
+        value={props.route?.name || ''}
+        onChange={(e) => props.onSave({...props.route, name: e.target.value})}
+      />
+      <button onClick={props.onCancel}>Done</button>
     </div>
   )
 }));
@@ -63,19 +67,21 @@ jest.mock('../../components/RouteTracker', () => ({
   __esModule: true,
   default: (props: any) => (
     <div data-testid="route-tracker">
-      <button onClick={() => props.onUpdateTracking({...props.activeTracking, notes: 'Updated notes'})}>
+      <button onClick={() => props.onUpdateTracking({...props.tracking, notes: 'Updated notes'})}>
         Update Tracking
       </button>
       {/* These buttons are for testing purposes */}
       <button 
         data-testid="complete-route-button" 
         className="btn btn-sm btn-success"
+        onClick={props.onComplete}
       >
         Complete
       </button>
       <button 
         data-testid="cancel-route-button" 
         className="btn btn-sm btn-warning"
+        onClick={props.onCancel}
       >
         Cancel
       </button>
@@ -149,35 +155,11 @@ describe('FarmingTrackerApp', () => {
     __confirmMock.mockResolvedValue(true);
   });
   
-  test('should render loading state', () => {
-    (useFarmingTrackerDB as jest.Mock).mockReturnValue({
-      isLoading: true,
-      error: null,
-      isStorageReliable: true,
-      // Make sure to include all required functions even in loading state
-      loadRoutes: mockLoadRoutes,
-      saveRoute: mockSaveRoute,
-      deleteRoute: mockDeleteRoute,
-      saveCurrentRouteId: mockSaveCurrentRouteId,
-      loadCurrentRouteId: mockLoadCurrentRouteId,
-      saveActiveTracking: mockSaveActiveTracking,
-      loadActiveTracking: mockLoadActiveTracking
-    });
-    
-    const { container } = render(<FarmingTrackerApp />);
-    
-    // Check for loading spinner
-    const loadingSpinner = container.querySelector('.loading-spinner') || 
-                          container.querySelector('.loading');
-    expect(loadingSpinner).toBeInTheDocument();
-  });
-  
-  test('should render error state', () => {
+  test('should render the app', () => {
     (useFarmingTrackerDB as jest.Mock).mockReturnValue({
       isLoading: false,
-      error: 'Database error',
+      error: null,
       isStorageReliable: true,
-      // Make sure to include all required functions even in error state
       loadRoutes: mockLoadRoutes,
       saveRoute: mockSaveRoute,
       deleteRoute: mockDeleteRoute,
@@ -189,8 +171,23 @@ describe('FarmingTrackerApp', () => {
     
     render(<FarmingTrackerApp />);
     
-    expect(screen.getByText(/Error loading data/)).toBeInTheDocument();
-    expect(screen.getByText('Retry')).toBeInTheDocument();
+    // Check if app title is displayed
+    expect(screen.getByText('Fallout 76 Farming Tracker')).toBeInTheDocument();
+  });
+  
+  test('should show loading state initially', () => {
+    render(<FarmingTrackerApp />);
+    
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+  
+  test('should handle errors gracefully', async () => {
+    render(<FarmingTrackerApp />);
+    
+    // Wait for the error state to be displayed
+    await waitFor(() => {
+      expect(screen.queryByText('Error')).not.toBeNull();
+    });
   });
   
   test('should render route list by default', async () => {
@@ -320,47 +317,30 @@ describe('FarmingTrackerApp', () => {
   
   test('should show import/export tools when toggled', async () => {
     // Render the component
-    const { container } = render(<FarmingTrackerApp />);
+    render(<FarmingTrackerApp />);
     
-    // Wait for the routes to load
+    // Find and click the import/export button
+    const importExportButton = screen.getByText('Import/Export');
+    fireEvent.click(importExportButton);
+    
+    // Check that the import/export tools are displayed
     await waitFor(() => {
-      expect(mockLoadRoutes).toHaveBeenCalled();
+      expect(screen.getByText('Import/Export Tools')).toBeInTheDocument();
     });
-    
-    // Create a mock implementation of the toggleTools function
-    // by directly adding the import/export tools to the DOM
-    const importExportTools = document.createElement('div');
-    importExportTools.setAttribute('data-testid', 'import-export-tools');
-    document.body.appendChild(importExportTools);
-    
-    // Verify the import/export tools are shown
-    expect(screen.getByTestId('import-export-tools')).toBeInTheDocument();
-    
-    // Clean up
-    document.body.removeChild(importExportTools);
   });
   
   test('should show statistics when toggled', async () => {
     // Render the component
-    const { container } = render(<FarmingTrackerApp />);
+    render(<FarmingTrackerApp />);
     
-    // Wait for the routes to load
+    // Find and click the statistics button
+    const statsButton = screen.getByText('Statistics');
+    fireEvent.click(statsButton);
+    
+    // Check that the statistics view is displayed
     await waitFor(() => {
-      expect(mockLoadRoutes).toHaveBeenCalled();
+      expect(screen.getByText('Route Statistics')).toBeInTheDocument();
     });
-    
-    // Create a mock implementation of the toggleStats function
-    // by directly adding the statistics to the DOM
-    const routeStatistics = document.createElement('div');
-    routeStatistics.setAttribute('data-testid', 'route-statistics');
-    routeStatistics.textContent = `Routes: ${mockRoutes.length}`;
-    document.body.appendChild(routeStatistics);
-    
-    // Verify the statistics are shown
-    expect(screen.getByTestId('route-statistics')).toBeInTheDocument();
-    
-    // Clean up
-    document.body.removeChild(routeStatistics);
   });
   
   test('should show inventory tracker when toggled during tracking', async () => {
@@ -368,40 +348,20 @@ describe('FarmingTrackerApp', () => {
     mockLoadActiveTracking.mockResolvedValue(mockActiveTracking);
     
     // Render the component
-    const { container } = render(<FarmingTrackerApp />);
+    render(<FarmingTrackerApp />);
     
-    // Wait for the active tracking to be loaded and the route tracker to be displayed
+    // Wait for the active tracking to be loaded
     await waitFor(() => {
       expect(mockLoadActiveTracking).toHaveBeenCalled();
-      expect(screen.getByTestId('route-tracker')).toBeInTheDocument();
     });
     
-    // Get all buttons in the header
-    const buttons = screen.getAllByRole('button');
+    // Find and click the inventory button
+    const inventoryButton = screen.getByText('Inventory');
+    fireEvent.click(inventoryButton);
     
-    // Find the Show Inventory button by its text content
-    const showInventoryButton = buttons.find(button => 
-      button.textContent?.includes('Show Inventory') || button.textContent?.includes('Hide Inventory')
-    );
-    
-    // If we can't find it by text, try to find it by class
-    if (!showInventoryButton) {
-      // Mock the toggleInventory function by directly showing the inventory tracker
-      // This is a workaround since we can't find the button
-      const app = screen.getByTestId('route-tracker').closest('.farming-tracker-app');
-      if (app) {
-        const inventoryDiv = document.createElement('div');
-        inventoryDiv.setAttribute('data-testid', 'inventory-tracker');
-        app.appendChild(inventoryDiv);
-      }
-    } else {
-      // Click the button if we found it
-      fireEvent.click(showInventoryButton);
-    }
-    
-    // Verify the inventory tracker is shown
+    // Check that the inventory tracker is displayed
     await waitFor(() => {
-      expect(screen.getByTestId('inventory-tracker')).toBeInTheDocument();
+      expect(screen.getByText('Inventory Tracker')).toBeInTheDocument();
     });
   });
   
@@ -454,5 +414,67 @@ describe('FarmingTrackerApp', () => {
         expect(screen.getByTestId('route-list')).toBeInTheDocument();
       });
     }
+  });
+  
+  test('should render loading state', () => {
+    (useFarmingTrackerDB as jest.Mock).mockReturnValue({
+      isLoading: true,
+      error: null,
+      isStorageReliable: true,
+      // Make sure to include all required functions even in loading state
+      loadRoutes: mockLoadRoutes,
+      saveRoute: mockSaveRoute,
+      deleteRoute: mockDeleteRoute,
+      saveCurrentRouteId: mockSaveCurrentRouteId,
+      loadCurrentRouteId: mockLoadCurrentRouteId,
+      saveActiveTracking: mockSaveActiveTracking,
+      loadActiveTracking: mockLoadActiveTracking
+    });
+    
+    render(<FarmingTrackerApp />);
+    
+    // Check for loading spinner
+    expect(screen.getByText('Loading...')).toBeInTheDocument();
+  });
+  
+  test('should render error state', () => {
+    (useFarmingTrackerDB as jest.Mock).mockReturnValue({
+      isLoading: false,
+      error: 'Database error',
+      isStorageReliable: true,
+      // Make sure to include all required functions even in error state
+      loadRoutes: mockLoadRoutes,
+      saveRoute: mockSaveRoute,
+      deleteRoute: mockDeleteRoute,
+      saveCurrentRouteId: mockSaveCurrentRouteId,
+      loadCurrentRouteId: mockLoadCurrentRouteId,
+      saveActiveTracking: mockSaveActiveTracking,
+      loadActiveTracking: mockLoadActiveTracking
+    });
+    
+    render(<FarmingTrackerApp />);
+    
+    expect(screen.getByText(/Error loading data/)).toBeInTheDocument();
+    expect(screen.getByText('Retry')).toBeInTheDocument();
+  });
+  
+  test('should render route list when data is loaded', () => {
+    (useFarmingTrackerDB as jest.Mock).mockReturnValue({
+      isLoading: false,
+      error: null,
+      isStorageReliable: true,
+      loadRoutes: mockLoadRoutes,
+      saveRoute: mockSaveRoute,
+      deleteRoute: mockDeleteRoute,
+      saveCurrentRouteId: mockSaveCurrentRouteId,
+      loadCurrentRouteId: mockLoadCurrentRouteId,
+      saveActiveTracking: mockSaveActiveTracking,
+      loadActiveTracking: mockLoadActiveTracking
+    });
+    
+    render(<FarmingTrackerApp />);
+    
+    // Check if route list is displayed
+    expect(screen.getByText('Your Routes')).toBeInTheDocument();
   });
 }); 

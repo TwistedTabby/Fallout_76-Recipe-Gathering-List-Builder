@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen } from '@testing-library/react';
 import RouteStatistics from '../../components/RouteStatistics';
 import { mockRoutes } from '../../testUtils/testHelpers';

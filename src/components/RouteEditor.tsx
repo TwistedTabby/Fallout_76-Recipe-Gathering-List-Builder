@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faPlus, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
-import { Route, Stop } from '../types/farmingTracker';
+import { faTimes, faPlus, faEdit, faTrash, faArrowUp, faArrowDown } from '@fortawesome/free-solid-svg-icons';
+import { Route } from '../types/farmingTracker';
+import { v4 as uuidv4 } from 'uuid';
 
 interface RouteEditorProps {
   route: Route | null;
@@ -25,7 +26,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
 }) => {
   // Initialize with route data or empty values
   const [editedRoute, setEditedRoute] = useState<Route>({
-    id: route?.id || '',
+    id: route?.id || uuidv4(),
     name: route?.name || '',
     description: route?.description || '',
     stops: route?.stops || [],
@@ -35,26 +36,63 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
   
   const [validationError, setValidationError] = useState<string | null>(null);
 
+  // Update editedRoute when route prop changes
+  useEffect(() => {
+    if (route) {
+      setEditedRoute({
+        id: route.id,
+        name: route.name,
+        description: route.description,
+        stops: route.stops,
+        completedRuns: route.completedRuns || 0,
+        autoInventoryChecks: route.autoInventoryChecks || false
+      });
+    }
+  }, [route]);
+
   // Handle name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedRoute(prev => ({ ...prev, name: e.target.value }));
+    const updatedRoute = { ...editedRoute, name: e.target.value };
+    setEditedRoute(updatedRoute);
     if (validationError) setValidationError(null);
+    
+    // Auto-save if name is not empty
+    if (e.target.value.trim()) {
+      onSave(updatedRoute);
+    }
   };
 
   // Handle description change
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setEditedRoute(prev => ({ ...prev, description: e.target.value }));
+    const updatedRoute = { ...editedRoute, description: e.target.value };
+    setEditedRoute(updatedRoute);
+    onSave(updatedRoute);
   };
 
   // Handle auto inventory checks change
   const handleAutoInventoryChecksChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setEditedRoute(prev => ({ ...prev, autoInventoryChecks: e.target.checked }));
+    const updatedRoute = { ...editedRoute, autoInventoryChecks: e.target.checked };
+    setEditedRoute(updatedRoute);
+    onSave(updatedRoute);
   };
 
   // Handle adding a new stop
   const handleAddStop = () => {
-    if (onAddStop && editedRoute.id) {
-      onAddStop(editedRoute.id);
+    console.log("Add Stop button clicked");
+    console.log("editedRoute:", editedRoute);
+    console.log("onAddStop exists:", !!onAddStop);
+    console.log("editedRoute.id exists:", !!editedRoute.id);
+    
+    if (onAddStop) {
+      if (editedRoute.id) {
+        console.log("Calling onAddStop with ID:", editedRoute.id);
+        onAddStop(editedRoute.id);
+      } else {
+        console.log("No route ID available, cannot add stop");
+        // Show an error or notification here
+      }
+    } else {
+      console.log("onAddStop function not provided");
     }
   };
 
@@ -66,14 +104,6 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
   };
 
   // Handle saving a stop
-  const handleSaveStop = (updatedStop: Stop) => {
-    setEditedRoute(prev => ({
-      ...prev,
-      stops: prev.stops.map(stop => 
-        stop.id === updatedStop.id ? updatedStop : stop
-      )
-    }));
-  };
 
   // Handle deleting a stop
   const handleDeleteStop = (stopId: string) => {
@@ -82,127 +112,176 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
     }
   };
 
-  // Handle saving the route
-  const handleSave = () => {
-    // Validate required fields
-    if (!editedRoute.name.trim()) {
-      setValidationError('Route name is required');
-      return;
-    }
+  // Validate the route
 
-    onSave(editedRoute);
+  // Handle moving a stop up in the list
+  const handleMoveStopUp = (index: number) => {
+    if (index <= 0) return;
+    
+    const newStops = [...editedRoute.stops];
+    const temp = newStops[index];
+    newStops[index] = newStops[index - 1];
+    newStops[index - 1] = temp;
+    
+    const updatedRoute = {
+      ...editedRoute,
+      stops: newStops
+    };
+    
+    setEditedRoute(updatedRoute);
+    onSave(updatedRoute);
+  };
+
+  // Handle moving a stop down in the list
+  const handleMoveStopDown = (index: number) => {
+    if (index >= editedRoute.stops.length - 1) return;
+    
+    const newStops = [...editedRoute.stops];
+    const temp = newStops[index];
+    newStops[index] = newStops[index + 1];
+    newStops[index + 1] = temp;
+    
+    const updatedRoute = {
+      ...editedRoute,
+      stops: newStops
+    };
+    
+    setEditedRoute(updatedRoute);
+    onSave(updatedRoute);
   };
 
   return (
-    <div className="route-editor">
-      <div className="route-editor-header">
-        <h2>{editedRoute.id ? 'Edit Route' : 'Create Route'}</h2>
+    <div className="card route-editor">
+      <div className="card-header route-editor-header">
+        <h2>{route ? 'Edit Route' : 'Create New Route'}</h2>
         <div className="route-editor-actions">
           <button 
-            className="route-editor-action-button cancel-button" 
+            className="btn btn-outline"
             onClick={onCancel}
-            title="Cancel"
           >
-            <FontAwesomeIcon icon={faTimes} /> Cancel
-          </button>
-          <button 
-            className="route-editor-action-button save-button" 
-            onClick={handleSave}
-            title="Save Route"
-          >
-            <FontAwesomeIcon icon={faSave} /> Save Route
+            <FontAwesomeIcon icon={faTimes} /> Done
           </button>
         </div>
       </div>
       
-      <div className="route-editor-form">
+      <div className="card-body">
         <div className="form-group">
-          <label htmlFor="route-name">Route Name:</label>
+          <label htmlFor="route-name" className="form-label">Route Name:</label>
           <input
             id="route-name"
             type="text"
+            className="form-control"
             value={editedRoute.name}
             onChange={handleNameChange}
-            className={validationError ? 'error' : ''}
+            onBlur={() => {
+              if (!editedRoute.name.trim()) {
+                setValidationError('Route name is required');
+              }
+            }}
+            placeholder="Enter route name"
           />
-          {validationError && <div className="error-message">{validationError}</div>}
+          {validationError && (
+            <div className="text-red-500 mt-1 text-sm">{validationError}</div>
+          )}
         </div>
         
         <div className="form-group">
-          <label htmlFor="route-description">Description:</label>
+          <label htmlFor="route-description" className="form-label">Description:</label>
           <textarea
             id="route-description"
+            className="form-control"
             value={editedRoute.description}
             onChange={handleDescriptionChange}
+            placeholder="Enter route description"
             rows={3}
           />
         </div>
         
-        <div className="form-group checkbox-group">
-          <label htmlFor="auto-inventory-checks">
+        <div className="form-group">
+          <div className="flex items-center">
             <input
               id="auto-inventory-checks"
               type="checkbox"
+              className="mr-2"
               checked={editedRoute.autoInventoryChecks}
               onChange={handleAutoInventoryChecksChange}
             />
-            Automatically check inventory before first stop and after last stop
-          </label>
-        </div>
-      </div>
-      
-      <div className="route-stops-section">
-        <div className="route-stops-header">
-          <h3>Stops</h3>
-          <button 
-            className="add-stop-button"
-            onClick={handleAddStop}
-            disabled={!editedRoute.id}
-            title="Add Stop"
-          >
-            <FontAwesomeIcon icon={faPlus} /> Add Stop
-          </button>
+            <label htmlFor="auto-inventory-checks" className="form-label mb-0">
+              Collect inventory data
+            </label>
+          </div>
+          <div className="text-sm text-gray-500 mt-1">
+            When checked, the app will ask for inventory counts for harvestable items for each stop at the start and end of the stop.
+          </div>
         </div>
         
-        {editedRoute.stops.length === 0 ? (
-          <div className="no-stops-message">
-            <p>No stops added yet. Add a stop to get started.</p>
+        <div className="stops-section">
+          <div className="stops-header">
+            <h3>Stops</h3>
+            <button 
+              className="btn btn-secondary btn-sm"
+              onClick={handleAddStop}
+            >
+              <FontAwesomeIcon icon={faPlus} /> Add Stop
+            </button>
           </div>
-        ) : (
-          <ul className="stops-list">
-            {editedRoute.stops.map(stop => (
-              <li key={stop.id} className="stop-item">
-                <div className="stop-item-content">
-                  <div className="stop-item-info">
-                    <h4 className="stop-name">{stop.name}</h4>
-                    <p className="stop-description">{stop.description}</p>
-                    <div className="stop-stats">
-                      <span className="stop-items-count">
-                        {stop.items.length} item{stop.items.length !== 1 ? 's' : ''}
-                      </span>
+          
+          {editedRoute.stops.length === 0 ? (
+            <div className="p-4 text-center bg-gray-50 rounded-lg">
+              <p className="text-gray-600">No stops added yet. Add a stop to get started.</p>
+            </div>
+          ) : (
+            <ul className="stops-list">
+              {editedRoute.stops.map((stop, index) => (
+                <li key={stop.id} className="stop-item">
+                  <div className="stop-info">
+                    <div className="stop-name">{stop.name}</div>
+                    {stop.description && (
+                      <div className="stop-description">{stop.description}</div>
+                    )}
+                    <div className="stop-item-count">
+                      {stop.items.length} item{stop.items.length !== 1 ? 's' : ''}
                     </div>
                   </div>
-                  <div className="stop-item-actions">
+                  <div className="stop-actions">
                     <button 
-                      className="stop-action-button stop-edit-button"
+                      className="btn-icon-sm btn-secondary"
+                      onClick={() => handleMoveStopUp(index)}
+                      disabled={index === 0}
+                      aria-label="Move stop up"
+                    >
+                      <FontAwesomeIcon icon={faArrowUp} />
+                    </button>
+                    <button 
+                      className="btn-icon-sm btn-secondary"
+                      onClick={() => handleMoveStopDown(index)}
+                      disabled={index === editedRoute.stops.length - 1}
+                      aria-label="Move stop down"
+                    >
+                      <FontAwesomeIcon icon={faArrowDown} />
+                    </button>
+                    <button 
+                      className="btn-icon-sm edit-button"
                       onClick={() => handleEditStop(stop.id)}
+                      aria-label="Edit stop"
                       title="Edit Stop"
                     >
                       <FontAwesomeIcon icon={faEdit} />
                     </button>
                     <button 
-                      className="stop-action-button stop-delete-button"
+                      className="btn-icon-sm delete-button"
                       onClick={() => handleDeleteStop(stop.id)}
+                      aria-label="Delete stop"
                       title="Delete Stop"
                     >
                       <FontAwesomeIcon icon={faTrash} />
                     </button>
                   </div>
-                </div>
-              </li>
-            ))}
-          </ul>
-        )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );

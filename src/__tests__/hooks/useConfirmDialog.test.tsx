@@ -1,4 +1,3 @@
-import React from 'react';
 import { renderHook, act } from '@testing-library/react';
 import { useConfirmDialog, ConfirmOptions } from '../../components/ui/ConfirmDialog';
 
@@ -23,20 +22,17 @@ describe('useConfirmDialog', () => {
     });
   });
 
-  test('should show dialog with string message', async () => {
+  test('should show dialog and resolve promise', async () => {
     const { result } = renderHook(() => useConfirmDialog());
     
-    // Start the confirm process but don't resolve it yet
-    let confirmPromise: Promise<boolean>;
-    act(() => {
-      confirmPromise = result.current.confirm('Test message');
-    });
+    // Show dialog and store promise
+    const confirmPromise = result.current.confirm('Test message');
     
-    // Check that dialog is open with the correct message
+    // Check that dialog is open
     expect(result.current.dialogProps.isOpen).toBe(true);
-    expect(result.current.dialogProps.options).toEqual({ message: 'Test message' });
+    expect(result.current.dialogProps.options.message).toBe('Test message');
     
-    // Simulate confirming
+    // Confirm dialog
     act(() => {
       result.current.dialogProps.onConfirm();
     });
@@ -59,13 +55,10 @@ describe('useConfirmDialog', () => {
       confirmButtonClass: 'test-class'
     };
     
-    // Start the confirm process but don't resolve it yet
-    let confirmPromise: Promise<boolean>;
-    act(() => {
-      confirmPromise = result.current.confirm(options);
-    });
+    // Show dialog with options and store promise
+    const confirmPromise = result.current.confirm(options);
     
-    // Check that dialog is open with the correct options
+    // Check that dialog is open with correct options
     expect(result.current.dialogProps.isOpen).toBe(true);
     expect(result.current.dialogProps.options).toEqual(options);
     
@@ -81,7 +74,7 @@ describe('useConfirmDialog', () => {
     await expect(confirmPromise).resolves.toBe(false);
   });
 
-  test('should close dialog with closeDialog function', () => {
+  test('should close dialog when canceled', () => {
     const { result } = renderHook(() => useConfirmDialog());
     
     // Open dialog
@@ -89,15 +82,125 @@ describe('useConfirmDialog', () => {
       result.current.confirm('Test message');
     });
     
+    // Check that dialog is open
     expect(result.current.dialogProps.isOpen).toBe(true);
     
-    // Close dialog using the onConfirm function (which calls closeDialog internally)
+    // Close dialog using onCancel
     act(() => {
-      // We're accessing the internal implementation here, which is not ideal
-      // but necessary to test the closeDialog function
+      result.current.dialogProps.onCancel();
+    });
+    
+    // Check that dialog is closed
+    expect(result.current.dialogProps.isOpen).toBe(false);
+  });
+
+  test('should resolve promise when confirmed', async () => {
+    const { result } = renderHook(() => useConfirmDialog());
+    
+    // Show dialog and store promise
+    let confirmPromise: Promise<boolean>;
+    act(() => {
+      confirmPromise = result.current.confirm('Test message');
+    });
+    
+    // Check that dialog is open
+    expect(result.current.dialogProps.isOpen).toBe(true);
+    
+    // Confirm dialog
+    act(() => {
       result.current.dialogProps.onConfirm();
     });
     
+    // Check that dialog is closed
     expect(result.current.dialogProps.isOpen).toBe(false);
+    
+    // Check that promise resolves to true
+    await expect(confirmPromise).resolves.toBe(true);
+  });
+
+  test('should resolve promise to false when canceled', async () => {
+    const { result } = renderHook(() => useConfirmDialog());
+    
+    // Show dialog and store promise
+    let confirmPromise: Promise<boolean>;
+    act(() => {
+      confirmPromise = result.current.confirm('Test message');
+    });
+    
+    // Check that dialog is open
+    expect(result.current.dialogProps.isOpen).toBe(true);
+    
+    // Simulate canceling
+    act(() => {
+      result.current.dialogProps.onCancel();
+    });
+    
+    // Check that dialog is closed
+    expect(result.current.dialogProps.isOpen).toBe(false);
+    
+    // Check that promise resolves to false
+    await expect(confirmPromise).resolves.toBe(false);
+  });
+
+  test('should handle confirm with custom options', async () => {
+    const { result } = renderHook(() => useConfirmDialog());
+    
+    // Show dialog with custom options and store promise
+    let confirmPromise!: Promise<boolean>;
+    act(() => {
+      confirmPromise = result.current.confirm({
+        title: 'Custom Title',
+        message: 'Custom message',
+        confirmText: 'Yes',
+        cancelText: 'No'
+      });
+    });
+    
+    // Check that dialog is open with custom options
+    expect(result.current.dialogProps.isOpen).toBe(true);
+    expect(result.current.dialogProps.options.title).toBe('Custom Title');
+    expect(result.current.dialogProps.options.message).toBe('Custom message');
+    expect(result.current.dialogProps.options.confirmText).toBe('Yes');
+    expect(result.current.dialogProps.options.cancelText).toBe('No');
+    
+    // Confirm dialog
+    act(() => {
+      result.current.dialogProps.onConfirm();
+    });
+    
+    // Check that dialog is closed
+    expect(result.current.dialogProps.isOpen).toBe(false);
+    
+    // Check that promise resolves to true
+    await expect(confirmPromise).resolves.toBe(true);
+  });
+
+  test('should handle cancel with custom options', async () => {
+    const { result } = renderHook(() => useConfirmDialog());
+    
+    // Show dialog with custom options and store promise
+    let confirmPromise!: Promise<boolean>;
+    act(() => {
+      confirmPromise = result.current.confirm({
+        title: 'Custom Title',
+        message: 'Custom message',
+        confirmText: 'Yes',
+        cancelText: 'No'
+      });
+    });
+    
+    // Check that dialog is open with custom options
+    expect(result.current.dialogProps.isOpen).toBe(true);
+    
+    // Cancel dialog
+    act(() => {
+      result.current.dialogProps.onCancel();
+    });
+    
+    // Check that dialog is closed
+    expect(result.current.dialogProps.isOpen).toBe(false);
+    
+    // Check that promise resolves to false
+    await expect(confirmPromise).resolves.toBe(false);
   });
 }); 

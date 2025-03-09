@@ -21,7 +21,7 @@ export function useFarmingTrackerDB() {
     }
     
     return openDB<FarmingTrackerDB>('farming-tracker-db', 2, {
-      upgrade(db, oldVersion, newVersion, transaction) {
+      upgrade(db, oldVersion, newVersion) {
         console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
         
         // If this is a fresh database (version 0)

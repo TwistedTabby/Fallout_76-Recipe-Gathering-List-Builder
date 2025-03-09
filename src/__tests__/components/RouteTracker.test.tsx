@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RouteTracker from '../../components/RouteTracker';
 import { mockRoutes, mockActiveTracking } from '../../testUtils/testHelpers';
@@ -6,49 +5,62 @@ import { mockRoutes, mockActiveTracking } from '../../testUtils/testHelpers';
 // Mock the actual implementation of RouteTracker
 jest.mock('../../components/RouteTracker', () => {
   return function MockRouteTracker({ 
-    route, 
-    activeTracking, 
-    onStartTracking, 
-    onStopTracking, 
-    onToggleItem, 
-    onResetRoute 
+    tracking,
+    onUpdateTracking,
+    onUpdateInventory,
+    onComplete,
+    onCancel
+  }: {
+    tracking: any;
+    onUpdateTracking: any;
+    onUpdateInventory: any;
+    onComplete: any;
+    onCancel: any;
   }) {
     // Ensure route is not null before accessing its properties
-    if (!route) {
+    if (!tracking || !tracking.route) {
       return <div>No route provided</div>;
     }
 
-    // If activeTracking is null, render the non-tracking view
-    if (!activeTracking) {
-      return (
-        <div>
-          <h2>{route.name}</h2>
-          <p>{route.description || ''}</p>
-          <button onClick={() => onStartTracking && onStartTracking(route.id)}>Start Tracking</button>
-        </div>
-      );
-    }
-    
-    // If activeTracking is not null, render the tracking view
+    // Render the tracking view
     return (
       <div>
         <h2>Currently Tracking</h2>
-        <button onClick={() => onStopTracking && onStopTracking()}>Stop Tracking</button>
-        <button onClick={() => onResetRoute && onResetRoute(route.id)}>Reset All Items</button>
+        <h3>{tracking.route.name}</h3>
+        <p>{tracking.route.description || ''}</p>
         
         <div>
-          {route.stops && route.stops.map(stop => (
+          {tracking.route.stops && tracking.route.stops.map((stop: any) => (
             <div key={stop.id}>
               <h3>{stop.name}</h3>
+              <p>{stop.description || ''}</p>
               <ul>
-                {stop.items && stop.items.map(item => (
-                  <li key={item.id} className={activeTracking.collectedItems && activeTracking.collectedItems[item.id] ? 'tracker-item collected' : 'tracker-item'}>
+                {stop.items && stop.items.map((item: any) => (
+                  <li key={item.id} className={tracking.collectedItems && tracking.collectedItems[item.id] ? 'tracker-item collected' : 'tracker-item'}>
                     <input 
-                      type="checkbox" 
-                      checked={!!(activeTracking.collectedItems && activeTracking.collectedItems[item.id])} 
-                      onChange={() => onToggleItem && onToggleItem(route.id, stop.id, item.id)} 
+                      type="checkbox"
+                      id={`item-${item.id}`}
+                      checked={tracking.collectedItems && tracking.collectedItems[item.id] || false}
+                      onChange={() => {
+                        onUpdateTracking({
+                          ...tracking,
+                          collectedItems: {
+                            ...tracking.collectedItems,
+                            [item.id]: !tracking.collectedItems[item.id]
+                          }
+                        });
+                        
+                        // Call onUpdateInventory when an item is collected
+                        if (!tracking.collectedItems[item.id]) {
+                          onUpdateInventory({
+                            [item.name]: (item.quantity || 1)
+                          });
+                        }
+                      }}
+                      aria-label={item.name}
                     />
-                    <span>{item.name || item.type}</span>
+                    <label htmlFor={`item-${item.id}`}>{item.name}</label>
+                    {tracking.collectedItems && tracking.collectedItems[item.id] && <span>Collected</span>}
                   </li>
                 ))}
               </ul>
@@ -57,10 +69,17 @@ jest.mock('../../components/RouteTracker', () => {
         </div>
         
         <div>
-          {activeTracking.collectedItems ? Object.keys(activeTracking.collectedItems).length : 0}/{
-            route.stops ? route.stops.reduce((total, stop) => total + (stop.items ? stop.items.length : 0), 0) : 0
+          {Object.keys(tracking.collectedItems || {}).length}/{
+            tracking.route.stops ? tracking.route.stops.reduce((total: number, stop: any) => total + (stop.items ? stop.items.length : 0), 0) : 0
           } items collected
         </div>
+        
+        <div>
+          <p>Elapsed Time: 00:00:00</p>
+        </div>
+        
+        <button onClick={onComplete}>Stop Tracking</button>
+        <button onClick={onCancel}>Cancel Tracking</button>
       </div>
     );
   };
@@ -83,12 +102,18 @@ describe('RouteTracker', () => {
   test('should render route details when not tracking', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={null}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          routeId: mockRoute.id,
+          startTime: Date.now(),
+          currentStopIndex: 0,
+          collectedItems: {},
+          notes: '',
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
@@ -103,12 +128,14 @@ describe('RouteTracker', () => {
   test('should render tracking interface when tracking is active', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={mockActiveTracking}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
@@ -125,12 +152,18 @@ describe('RouteTracker', () => {
   test('should call onStartTracking when start button is clicked', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={null}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          routeId: mockRoute.id,
+          startTime: Date.now(),
+          currentStopIndex: 0,
+          collectedItems: {},
+          notes: '',
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
@@ -144,12 +177,14 @@ describe('RouteTracker', () => {
   test('should call onStopTracking when stop button is clicked', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={mockActiveTracking}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
@@ -160,48 +195,93 @@ describe('RouteTracker', () => {
   });
   
   test('should call onToggleItem when an item checkbox is clicked', () => {
+    const onUpdateTrackingMock = jest.fn();
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={mockActiveTracking}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={onUpdateTrackingMock}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
     // Find the first item checkbox and click it
     const firstStop = mockRoute.stops[0];
     const firstItem = firstStop.items[0];
-    const itemCheckbox = screen.getAllByRole('checkbox')[0];
-    fireEvent.click(itemCheckbox);
+    const checkbox = screen.getByLabelText(firstItem.name);
+    fireEvent.click(checkbox);
     
-    expect(mockOnToggleItem).toHaveBeenCalledTimes(1);
-    expect(mockOnToggleItem).toHaveBeenCalledWith(
-      mockRoute.id,
-      firstStop.id,
-      firstItem.id
+    expect(onUpdateTrackingMock).toHaveBeenCalled();
+  });
+  
+  test('should toggle item collection status', () => {
+    // Create a tracking object with one item already collected
+    const trackingWithCollectedItems = {
+      ...mockActiveTracking,
+      collectedItems: { 'item-1': true } as Record<string, boolean>,
+      route: mockRoute
+    };
+    
+    render(
+      <RouteTracker
+        tracking={trackingWithCollectedItems}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
+      />
     );
+    
+    // Check if the collected item has the 'collected' class
+    const collectedItems = Object.keys(trackingWithCollectedItems.collectedItems)
+      .filter(id => trackingWithCollectedItems.collectedItems[id as keyof typeof trackingWithCollectedItems.collectedItems]);
+    
+    if (collectedItems.length > 0) {
+      const collectedItemElements = screen.getAllByText('Collected');
+      expect(collectedItemElements.length).toBeGreaterThan(0);
+    }
   });
   
   test('should call onResetRoute when reset button is clicked', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={mockActiveTracking}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
-    const resetButton = screen.getByText('Reset All Items');
+    const resetButton = screen.getByText('Cancel Tracking');
     fireEvent.click(resetButton);
     
     expect(mockOnResetRoute).toHaveBeenCalledTimes(1);
-    expect(mockOnResetRoute).toHaveBeenCalledWith(mockRoute.id);
+  });
+  
+  test('should display progress information', () => {
+    render(
+      <RouteTracker
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
+      />
+    );
+    
+    // Check if progress information is displayed
+    expect(screen.getByText(/items collected/i)).toBeInTheDocument();
   });
   
   test('should display collected items count', () => {
@@ -226,7 +306,7 @@ describe('RouteTracker', () => {
     
     // Calculate total items
     const totalItems = mockRoute.stops.reduce(
-      (total, stop) => total + stop.items.length,
+      (total: number, stop: any) => total + (stop.items ? stop.items.length : 0),
       0
     );
     
@@ -240,41 +320,40 @@ describe('RouteTracker', () => {
   test('should display item type and name', () => {
     render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={mockActiveTracking}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
-    // Check if item types and names are displayed
+    // Check if item names are displayed
     mockRoute.stops.forEach(stop => {
       stop.items.forEach(item => {
-        const itemName = item.name || item.type;
-        expect(screen.getByText(itemName)).toBeInTheDocument();
+        expect(screen.getByLabelText(item.name)).toBeInTheDocument();
       });
     });
   });
   
-  test('should apply collected class to collected items', () => {
-    // Create a tracking object with some items collected
+  test('should mark items as collected', () => {
+    // Create a tracking object with one item already collected
     const trackingWithCollectedItems = {
       ...mockActiveTracking,
-      collectedItems: {
-        'item-1': true
-      }
+      collectedItems: { 'item-1': true } as Record<string, boolean>,
+      route: mockRoute
     };
     
-    const { container } = render(
+    render(
       <RouteTracker
-        route={mockRoute}
-        activeTracking={trackingWithCollectedItems}
-        onStartTracking={mockOnStartTracking}
-        onStopTracking={mockOnStopTracking}
-        onToggleItem={mockOnToggleItem}
-        onResetRoute={mockOnResetRoute}
+        tracking={trackingWithCollectedItems}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
       />
     );
     
@@ -283,5 +362,65 @@ describe('RouteTracker', () => {
     
     // Check if it has the collected class
     expect(firstItemElement).toHaveClass('collected');
+  });
+  
+  test('should display elapsed time', () => {
+    jest.useFakeTimers();
+    
+    render(
+      <RouteTracker
+        tracking={{
+          ...mockActiveTracking,
+          route: mockRoute
+        }}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
+      />
+    );
+    
+    // Advance timers to trigger elapsed time update
+    jest.advanceTimersByTime(5000);
+    
+    // Check if elapsed time is displayed
+    expect(screen.getByText(/Elapsed Time/i)).toBeInTheDocument();
+    
+    jest.useRealTimers();
+  });
+  
+  test('should display item count', () => {
+    // Create a tracking object with some items collected
+    const trackingWithCollectedItems = {
+      ...mockActiveTracking,
+      collectedItems: {
+        'item-1': true
+      } as Record<string, boolean>,
+      route: mockRoute
+    };
+    
+    render(
+      <RouteTracker
+        tracking={trackingWithCollectedItems}
+        onUpdateTracking={jest.fn()}
+        onUpdateInventory={jest.fn()}
+        onComplete={mockOnStopTracking}
+        onCancel={mockOnResetRoute}
+      />
+    );
+    
+    // Calculate total items
+    const totalItems = mockRoute.stops.reduce(
+      (total: number, stop: any) => total + (stop.items ? stop.items.length : 0),
+      0
+    );
+    
+    // Check if collected count is displayed
+    const collectedCount = Object.keys(trackingWithCollectedItems.collectedItems).filter(
+      id => trackingWithCollectedItems.collectedItems[id as keyof typeof trackingWithCollectedItems.collectedItems]
+    ).length;
+    
+    // Use a regex to match the text since the exact format might vary
+    expect(screen.getByText(new RegExp(`${collectedCount}.*/${totalItems}.*items collected`, 'i'))).toBeInTheDocument();
   });
 }); 

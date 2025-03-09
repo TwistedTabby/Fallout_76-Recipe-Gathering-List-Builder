@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RouteEditor from '../../components/RouteEditor';
 import { mockRoutes } from '../../testUtils/testHelpers';
@@ -66,7 +65,7 @@ describe('RouteEditor', () => {
     expect(screen.getByText('No stops added yet. Add a stop to get started.')).toBeInTheDocument();
   });
   
-  test('should call onSave with updated route data when form is submitted', () => {
+  test('should auto-save when route data is updated', () => {
     render(
       <RouteEditor
         route={mockRoute}
@@ -78,19 +77,25 @@ describe('RouteEditor', () => {
       />
     );
     
+    // Clear mock calls that might have happened during initialization
+    mockOnSave.mockClear();
+    
     // Update form fields
     const nameInput = screen.getByLabelText('Route Name:');
     const descriptionInput = screen.getByLabelText('Description:');
     
+    // Change name and check if onSave was called
     fireEvent.change(nameInput, { target: { value: 'Updated Route Name' } });
+    expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
+      id: mockRoute.id,
+      name: 'Updated Route Name',
+    }));
+    
+    // Clear mock calls
+    mockOnSave.mockClear();
+    
+    // Change description and check if onSave was called
     fireEvent.change(descriptionInput, { target: { value: 'Updated description' } });
-    
-    // Submit form
-    const saveButton = screen.getByText('Save Route');
-    fireEvent.click(saveButton);
-    
-    // Check if onSave was called with updated data
-    expect(mockOnSave).toHaveBeenCalledTimes(1);
     expect(mockOnSave).toHaveBeenCalledWith(expect.objectContaining({
       id: mockRoute.id,
       name: 'Updated Route Name',
@@ -98,7 +103,7 @@ describe('RouteEditor', () => {
     }));
   });
   
-  test('should call onCancel when cancel button is clicked', () => {
+  test('should call onCancel when done button is clicked', () => {
     render(
       <RouteEditor
         route={mockRoute}
@@ -110,8 +115,8 @@ describe('RouteEditor', () => {
       />
     );
     
-    const cancelButton = screen.getByText('Cancel');
-    fireEvent.click(cancelButton);
+    const doneButton = screen.getByText('Done');
+    fireEvent.click(doneButton);
     
     expect(mockOnCancel).toHaveBeenCalledTimes(1);
   });
@@ -187,19 +192,21 @@ describe('RouteEditor', () => {
       />
     );
     
+    // Clear mock calls that might have happened during initialization
+    mockOnSave.mockClear();
+    
     // Clear the route name
     const nameInput = screen.getByLabelText('Route Name:');
     fireEvent.change(nameInput, { target: { value: '' } });
     
-    // Try to submit the form
-    const saveButton = screen.getByText('Save Route');
-    fireEvent.click(saveButton);
-    
-    // Check if onSave was not called due to validation failure
-    expect(mockOnSave).not.toHaveBeenCalled();
+    // Trigger validation by blurring the field
+    fireEvent.blur(nameInput);
     
     // Check if validation error message is displayed
     expect(screen.getByText('Route name is required')).toBeInTheDocument();
+    
+    // Check that onSave was not called with empty name
+    expect(mockOnSave).not.toHaveBeenCalled();
   });
   
   test('should display stop items count', () => {

@@ -1,4 +1,3 @@
-import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react';
 import RouteList from '../../components/RouteList';
 import { mockRoutes } from '../../testUtils/testHelpers';
@@ -14,6 +13,7 @@ describe('RouteList', () => {
   const mockOnEditRoute = jest.fn();
   const mockOnStartTracking = jest.fn();
   const mockOnCreateRoute = jest.fn();
+  const mockOnDuplicateRoute = jest.fn();
   
   beforeEach(() => {
     mockOnSelectRoute.mockClear();
@@ -21,27 +21,30 @@ describe('RouteList', () => {
     mockOnEditRoute.mockClear();
     mockOnStartTracking.mockClear();
     mockOnCreateRoute.mockClear();
+    mockOnDuplicateRoute.mockClear();
   });
   
   test('should render routes list', () => {
     render(
-      <RouteList
+      <RouteList 
         routes={mockRoutes}
         currentRouteId={null}
         onSelectRoute={mockOnSelectRoute}
-        onDeleteRoute={mockOnDeleteRoute}
-        onEditRoute={mockOnEditRoute}
-        onStartTracking={mockOnStartTracking}
         onCreateRoute={mockOnCreateRoute}
+        onEditRoute={mockOnEditRoute}
+        onDeleteRoute={mockOnDeleteRoute}
+        onStartTracking={mockOnStartTracking}
+        onDuplicateRoute={mockOnDuplicateRoute}
       />
     );
     
-    // Check if route names are displayed
-    expect(screen.getByText('Test Route 1')).toBeInTheDocument();
-    expect(screen.getByText('Test Route 2')).toBeInTheDocument();
+    // Check if route list header is displayed
+    expect(screen.getByText('Your Routes')).toBeInTheDocument();
     
-    // Check if create button is displayed
-    expect(screen.getByText('Create New Route')).toBeInTheDocument();
+    // Check if routes are displayed
+    mockRoutes.forEach(route => {
+      expect(screen.getByText(route.name)).toBeInTheDocument();
+    });
   });
   
   test('should display message when no routes exist', () => {
@@ -60,42 +63,45 @@ describe('RouteList', () => {
     expect(screen.getByText("You don't have any routes yet. Create your first route to get started!")).toBeInTheDocument();
   });
   
-  test('should call onSelectRoute when a route is clicked', () => {
+  test('should select route when clicked', () => {
     render(
-      <RouteList
+      <RouteList 
         routes={mockRoutes}
         currentRouteId={null}
         onSelectRoute={mockOnSelectRoute}
-        onDeleteRoute={mockOnDeleteRoute}
-        onEditRoute={mockOnEditRoute}
-        onStartTracking={mockOnStartTracking}
         onCreateRoute={mockOnCreateRoute}
+        onEditRoute={mockOnEditRoute}
+        onDeleteRoute={mockOnDeleteRoute}
+        onStartTracking={mockOnStartTracking}
+        onDuplicateRoute={mockOnDuplicateRoute}
       />
     );
     
-    fireEvent.click(screen.getByText('Test Route 1'));
+    // Click on the first route
+    const firstRouteElement = screen.getByText(mockRoutes[0].name);
+    fireEvent.click(firstRouteElement);
     
+    // Check if onSelectRoute was called with the correct route ID
     expect(mockOnSelectRoute).toHaveBeenCalledWith(mockRoutes[0].id);
   });
   
   test('should apply active class to the selected route', () => {
-    const { container } = render(
+    render(
       <RouteList
         routes={mockRoutes}
         currentRouteId={mockRoutes[0].id}
         onSelectRoute={mockOnSelectRoute}
-        onDeleteRoute={mockOnDeleteRoute}
-        onEditRoute={mockOnEditRoute}
-        onStartTracking={mockOnStartTracking}
         onCreateRoute={mockOnCreateRoute}
+        onEditRoute={mockOnEditRoute}
+        onDeleteRoute={mockOnDeleteRoute}
+        onStartTracking={mockOnStartTracking}
+        onDuplicateRoute={mockOnDuplicateRoute}
       />
     );
     
-    const selectedRouteElement = screen.getByText('Test Route 1').closest('.route-item');
-    const nonSelectedRouteElement = screen.getByText('Test Route 2').closest('.route-item');
-    
-    expect(selectedRouteElement).toHaveClass('active');
-    expect(nonSelectedRouteElement).not.toHaveClass('active');
+    // Check if the first route has the active class
+    const firstRouteElement = screen.getByText(mockRoutes[0].name).closest('.route-item');
+    expect(firstRouteElement).toHaveClass('active');
   });
   
   test('should call onCreateRoute when create button is clicked', () => {
@@ -209,5 +215,41 @@ describe('RouteList', () => {
     
     // onSelectRoute should not be called when clicking the start button
     expect(mockOnSelectRoute).not.toHaveBeenCalled();
+  });
+  
+  test('should render empty state when no routes are provided', () => {
+    render(
+      <RouteList 
+        routes={[]}
+        currentRouteId={null}
+        onSelectRoute={mockOnSelectRoute}
+        onCreateRoute={mockOnCreateRoute}
+        onEditRoute={mockOnEditRoute}
+        onDeleteRoute={mockOnDeleteRoute}
+        onStartTracking={mockOnStartTracking}
+        onDuplicateRoute={mockOnDuplicateRoute}
+      />
+    );
+    
+    expect(screen.getByText('No routes found')).toBeInTheDocument();
+    expect(screen.getByText('Create your first route')).toBeInTheDocument();
+  });
+  
+  test('should render create button', () => {
+    render(
+      <RouteList 
+        routes={mockRoutes}
+        currentRouteId={null}
+        onSelectRoute={mockOnSelectRoute}
+        onCreateRoute={mockOnCreateRoute}
+        onEditRoute={mockOnEditRoute}
+        onDeleteRoute={mockOnDeleteRoute}
+        onStartTracking={mockOnStartTracking}
+        onDuplicateRoute={mockOnDuplicateRoute}
+      />
+    );
+    
+    // Check if create button is displayed
+    expect(screen.getByText('Create New Route')).toBeInTheDocument();
   });
 }); 

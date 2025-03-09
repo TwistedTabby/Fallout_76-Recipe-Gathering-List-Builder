@@ -1,12 +1,12 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSave, faTimes, faPlus, faEdit } from '@fortawesome/free-solid-svg-icons';
-import { Stop, Item, DEFAULT_ITEM_TYPES } from '../types/farmingTracker';
+import { faSave, faTimes, faPlus, faEdit, faTrash } from '@fortawesome/free-solid-svg-icons';
+import { Stop, Item, ItemType } from '../types/farmingTracker';
 import { v4 as uuidv4 } from 'uuid';
-import { validateItemName } from '../utils/farmingTrackerUtils';
+import { DEFAULT_ITEM_TYPES, ITEM_TYPES_REQUIRING_NAME, ITEM_TYPES_WITH_DEFAULT_NAME } from '../types/farmingTracker';
 
 interface StopEditorProps {
-  stop: Stop;
+  stop: Stop | null;
   onSave: (updatedStop: Stop) => void;
   onCancel: () => void;
 }
@@ -15,63 +15,70 @@ interface StopEditorProps {
  * Component for editing a stop and its items
  */
 const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
-  // Local state for editing
-  const [editedStop, setEditedStop] = useState<Stop>({ ...stop });
-  const [isAddingItem, setIsAddingItem] = useState(false);
-  const [editingItemId, setEditingItemId] = useState<string | null>(null);
+  // Initialize with stop data or empty values
+  const [editedStop, setEditedStop] = useState<Stop>({
+    id: stop?.id || '',
+    name: stop?.name || '',
+    description: stop?.description || '',
+    items: stop?.items || [],
+    collectData: stop?.collectData || false
+  });
   
-  // New item form state
-  const [newItemType, setNewItemType] = useState(DEFAULT_ITEM_TYPES[0]);
+  const [validationError, setValidationError] = useState<string | null>(null);
+  const [newItemType, setNewItemType] = useState<ItemType>(DEFAULT_ITEM_TYPES[0] as ItemType);
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState(1);
   const [newItemDescription, setNewItemDescription] = useState('');
-  
-  // Update local state when stop prop changes
-  useEffect(() => {
-    setEditedStop({ ...stop });
-  }, [stop]);
+  const [editingItemId, setEditingItemId] = useState<string | null>(null);
 
-  // Handle stop name change
+  // Handle name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedStop(prev => ({ ...prev, name: e.target.value }));
+    if (validationError) setValidationError(null);
   };
 
-  // Handle stop description change
+  // Handle description change
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setEditedStop(prev => ({ ...prev, description: e.target.value }));
   };
 
-  // Handle collect data toggle
+  // Handle collect data change
   const handleCollectDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setEditedStop(prev => ({ ...prev, collectData: e.target.checked }));
   };
 
   // Reset new item form
   const resetNewItemForm = () => {
-    setNewItemType(DEFAULT_ITEM_TYPES[0]);
+    setNewItemType(DEFAULT_ITEM_TYPES[0] as ItemType);
     setNewItemName('');
     setNewItemQuantity(1);
     setNewItemDescription('');
-    setIsAddingItem(false);
+    setEditingItemId(null);
   };
 
   // Handle adding a new item
   const handleAddItem = () => {
-    // Validate item name based on type
-    if (!validateItemName(newItemName, newItemType)) {
-      alert(`Please provide a name for items of type ${newItemType}`);
+    // Validate item name for types that require it
+    if (ITEM_TYPES_REQUIRING_NAME.includes(newItemType) && !newItemName.trim()) {
+      setValidationError('Item name is required for this type');
       return;
     }
 
+    // Create new item
     const newItem: Item = {
       id: uuidv4(),
       type: newItemType,
-      name: newItemName || newItemType,
+      name: ITEM_TYPES_REQUIRING_NAME.includes(newItemType) 
+        ? newItemName.trim() 
+        : ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
+          ? newItemType
+          : newItemName.trim() || newItemType,
       quantity: newItemQuantity,
       collected: false,
-      description: newItemDescription
+      description: newItemDescription.trim()
     };
 
+    // Add to items list
     setEditedStop(prev => ({
       ...prev,
       items: [...prev.items, newItem]
@@ -84,40 +91,46 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   // Handle editing an item
   const handleEditItem = (itemId: string) => {
     const item = editedStop.items.find(item => item.id === itemId);
-    if (item) {
-      setEditingItemId(itemId);
-      setNewItemType(item.type);
-      setNewItemName(item.name);
-      setNewItemQuantity(item.quantity);
-      setNewItemDescription(item.description || '');
-    }
+    if (!item) return;
+
+    setNewItemType(item.type as ItemType);
+    setNewItemName(item.name || '');
+    setNewItemQuantity(item.quantity || 1);
+    setNewItemDescription(item.description || '');
+    setEditingItemId(itemId);
   };
 
   // Handle saving an edited item
   const handleSaveEditedItem = () => {
-    // Validate item name based on type
-    if (!validateItemName(newItemName, newItemType)) {
-      alert(`Please provide a name for items of type ${newItemType}`);
+    if (!editingItemId) return;
+
+    // Validate item name for types that require it
+    if (ITEM_TYPES_REQUIRING_NAME.includes(newItemType) && !newItemName.trim()) {
+      setValidationError('Item name is required for this type');
       return;
     }
 
+    // Update the item
     setEditedStop(prev => ({
       ...prev,
       items: prev.items.map(item => 
-        item.id === editingItemId 
+        item.id === editingItemId
           ? {
               ...item,
               type: newItemType,
-              name: newItemName || newItemType,
+              name: ITEM_TYPES_REQUIRING_NAME.includes(newItemType) 
+                ? newItemName.trim() 
+                : ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)
+                  ? newItemType
+                  : newItemName.trim() || newItemType,
               quantity: newItemQuantity,
-              description: newItemDescription
+              description: newItemDescription.trim()
             }
           : item
       )
     }));
 
     // Reset form
-    setEditingItemId(null);
     resetNewItemForm();
   };
 
@@ -127,19 +140,13 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
       ...prev,
       items: prev.items.filter(item => item.id !== itemId)
     }));
-
-    // If we were editing this item, cancel editing
-    if (editingItemId === itemId) {
-      setEditingItemId(null);
-      resetNewItemForm();
-    }
   };
 
   // Handle saving the stop
   const handleSave = () => {
-    // Validate stop has a name
+    // Validate required fields
     if (!editedStop.name.trim()) {
-      alert('Stop must have a name');
+      setValidationError('Stop name is required');
       return;
     }
 
@@ -149,7 +156,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   return (
     <div className="stop-editor">
       <div className="stop-editor-header">
-        <h2>{stop.id ? 'Edit Stop' : 'Create Stop'}</h2>
+        <h2>{editedStop.id ? 'Edit Stop' : 'Create Stop'}</h2>
         <div className="stop-editor-actions">
           <button 
             className="stop-editor-action-button cancel-button" 
@@ -167,7 +174,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           </button>
         </div>
       </div>
-
+      
       <div className="stop-editor-form">
         <div className="form-group">
           <label htmlFor="stop-name">Stop Name:</label>
@@ -176,76 +183,71 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
             type="text"
             value={editedStop.name}
             onChange={handleNameChange}
-            placeholder="Enter stop name"
-            className="stop-name-input"
+            className={validationError && validationError.includes('Stop name') ? 'error' : ''}
           />
+          {validationError && validationError.includes('Stop name') && (
+            <div className="error-message">{validationError}</div>
+          )}
         </div>
-
+        
         <div className="form-group">
-          <label htmlFor="stop-description">Description:</label>
+          <label htmlFor="stop-description">Notes:</label>
           <textarea
             id="stop-description"
             value={editedStop.description}
             onChange={handleDescriptionChange}
-            placeholder="Enter stop description"
-            className="stop-description-input"
             rows={3}
           />
         </div>
-
+        
         <div className="form-group checkbox-group">
-          <input
-            id="collect-data"
-            type="checkbox"
-            checked={editedStop.collectData || false}
-            onChange={handleCollectDataChange}
-          />
           <label htmlFor="collect-data">
+            <input
+              id="collect-data"
+              type="checkbox"
+              checked={editedStop.collectData}
+              onChange={handleCollectDataChange}
+            />
             Collect inventory data at this stop
           </label>
         </div>
       </div>
-
+      
       <div className="items-section">
-        <div className="items-header">
-          <h3>Items</h3>
-          <button 
-            className="add-item-button"
-            onClick={() => {
-              setIsAddingItem(true);
-              setEditingItemId(null);
-            }}
-            disabled={isAddingItem || editingItemId !== null}
-          >
-            <FontAwesomeIcon icon={faPlus} /> Add Item
-          </button>
-        </div>
-
-        {(isAddingItem || editingItemId !== null) && (
-          <div className="item-form">
-            <h4>{editingItemId ? 'Edit Item' : 'Add New Item'}</h4>
+        <h3>Items</h3>
+        
+        <div className="add-item-form">
+          <div className="form-row">
             <div className="form-group">
               <label htmlFor="item-type">Item Type:</label>
               <select
                 id="item-type"
                 value={newItemType}
-                onChange={(e) => setNewItemType(e.target.value)}
+                onChange={(e) => setNewItemType(e.target.value as ItemType)}
               >
                 {DEFAULT_ITEM_TYPES.map(type => (
                   <option key={type} value={type}>{type}</option>
                 ))}
               </select>
             </div>
-            <div className="form-group">
-              <label htmlFor="item-name">Item Name:</label>
-              <input
-                id="item-name"
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Enter item name"
-              />
-            </div>
+            
+            {(ITEM_TYPES_REQUIRING_NAME.includes(newItemType) || !ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)) && (
+              <div className="form-group">
+                <label htmlFor="item-name">Item Name:</label>
+                <input
+                  id="item-name"
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Enter item name"
+                  className={validationError && validationError.includes('Item name') ? 'error' : ''}
+                />
+                {validationError && validationError.includes('Item name') && (
+                  <div className="error-message">{validationError}</div>
+                )}
+              </div>
+            )}
+            
             <div className="form-group">
               <label htmlFor="item-quantity">Quantity:</label>
               <input
@@ -256,61 +258,70 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                 onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
               />
             </div>
-            <div className="form-group">
-              <label htmlFor="item-description">Description/Location:</label>
-              <textarea
-                id="item-description"
-                value={newItemDescription}
-                onChange={(e) => setNewItemDescription(e.target.value)}
-                placeholder="Enter item description or location"
-                rows={2}
-              />
-            </div>
-            <div className="item-form-actions">
-              <button 
-                className="cancel-button"
-                onClick={() => {
-                  resetNewItemForm();
-                  setEditingItemId(null);
-                }}
-              >
-                Cancel
-              </button>
-              <button 
-                className="save-button"
-                onClick={editingItemId ? handleSaveEditedItem : handleAddItem}
-              >
-                {editingItemId ? 'Save Item' : 'Add Item'}
-              </button>
-            </div>
           </div>
-        )}
-
+          
+          <div className="form-group">
+            <label htmlFor="item-description">Description:</label>
+            <input
+              id="item-description"
+              type="text"
+              value={newItemDescription}
+              onChange={(e) => setNewItemDescription(e.target.value)}
+              placeholder="Optional description or location hint"
+            />
+          </div>
+          
+          <div className="add-item-actions">
+            {editingItemId ? (
+              <button 
+                className="save-item-button"
+                onClick={handleSaveEditedItem}
+              >
+                <FontAwesomeIcon icon={faSave} /> Update Item
+              </button>
+            ) : (
+              <button 
+                className="add-item-button"
+                onClick={handleAddItem}
+                disabled={ITEM_TYPES_REQUIRING_NAME.includes(newItemType) && !newItemName.trim()}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Item
+              </button>
+            )}
+            
+            {editingItemId && (
+              <button 
+                className="cancel-edit-button"
+                onClick={resetNewItemForm}
+              >
+                <FontAwesomeIcon icon={faTimes} /> Cancel Edit
+              </button>
+            )}
+          </div>
+        </div>
+        
         {editedStop.items.length === 0 ? (
           <div className="no-items-message">
-            <p>This stop has no items yet. Add items to collect during your farming run.</p>
+            <p>No items added yet. Add items to this stop using the form above.</p>
           </div>
         ) : (
           <ul className="items-list">
-            {editedStop.items.map((item) => (
+            {editedStop.items.map(item => (
               <li key={item.id} className="item">
-                <div className="item-details">
-                  <div className="item-name-type">
-                    <span className="item-name">{item.name}</span>
-                    <span className="item-type">{item.type}</span>
-                  </div>
+                <div className="item-info">
+                  <div className="item-type-badge">{item.type}</div>
+                  <div className="item-name">{item.name}</div>
+                  {item.quantity > 1 && (
+                    <div className="item-quantity">x{item.quantity}</div>
+                  )}
                   {item.description && (
                     <div className="item-description">{item.description}</div>
                   )}
-                  <div className="item-quantity">
-                    Quantity: {item.quantity}
-                  </div>
                 </div>
                 <div className="item-actions">
                   <button 
                     className="edit-item-button"
                     onClick={() => handleEditItem(item.id)}
-                    disabled={isAddingItem || editingItemId !== null}
                     title="Edit Item"
                   >
                     <FontAwesomeIcon icon={faEdit} />
@@ -320,7 +331,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                     onClick={() => handleDeleteItem(item.id)}
                     title="Delete Item"
                   >
-                    <FontAwesomeIcon icon={faTimes} />
+                    <FontAwesomeIcon icon={faTrash} />
                   </button>
                 </div>
               </li>

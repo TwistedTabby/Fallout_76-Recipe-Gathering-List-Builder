@@ -22,14 +22,16 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
   onCancel
 }) => {
   // Local state
-  const [notes, setNotes] = useState(tracking.notes || '');
+  const [notes, setNotes] = useState(tracking?.notes || '');
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
 
   // Get the current stop
-  const currentStop = route.stops[tracking.currentStopIndex] || null;
+  const currentStop = route?.stops?.[tracking?.currentStopIndex] || null;
   
   // Calculate elapsed time
   useEffect(() => {
+    if (!tracking?.startTime) return;
+
     const updateElapsedTime = () => {
       const elapsed = Date.now() - tracking.startTime;
       const hours = Math.floor(elapsed / (1000 * 60 * 60));
@@ -48,7 +50,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
     const interval = setInterval(updateElapsedTime, 1000);
     
     return () => clearInterval(interval);
-  }, [tracking.startTime]);
+  }, [tracking?.startTime]);
 
   // Handle notes change
   const handleNotesChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
@@ -62,6 +64,8 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
 
   // Toggle item collected status
   const toggleItemCollected = (itemId: string) => {
+    if (!tracking?.collectedItems) return;
+
     const newCollectedItems = { ...tracking.collectedItems };
     newCollectedItems[itemId] = !newCollectedItems[itemId];
     
@@ -73,39 +77,39 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
 
   // Move to the next stop
   const moveToNextStop = () => {
-    if (tracking.currentStopIndex < route.stops.length - 1) {
-      onUpdateTracking({
-        ...tracking,
-        currentStopIndex: tracking.currentStopIndex + 1
-      });
-    }
+    if (!route?.stops || tracking.currentStopIndex >= route.stops.length - 1) return;
+
+    onUpdateTracking({
+      ...tracking,
+      currentStopIndex: tracking.currentStopIndex + 1
+    });
   };
 
   // Move to the previous stop
   const moveToPreviousStop = () => {
-    if (tracking.currentStopIndex > 0) {
-      onUpdateTracking({
-        ...tracking,
-        currentStopIndex: tracking.currentStopIndex - 1
-      });
-    }
+    if (tracking.currentStopIndex <= 0) return;
+
+    onUpdateTracking({
+      ...tracking,
+      currentStopIndex: tracking.currentStopIndex - 1
+    });
   };
 
   // Calculate progress percentage
   const calculateProgress = () => {
-    if (route.stops.length === 0) return 0;
+    if (!route?.stops || route.stops.length === 0) return 0;
     
     // Count collected items
-    const totalItems = route.stops.reduce((total, stop) => total + stop.items.length, 0);
+    const totalItems = route.stops.reduce((total, stop) => total + (stop.items?.length || 0), 0);
     if (totalItems === 0) return 0;
     
-    const collectedCount = Object.values(tracking.collectedItems).filter(Boolean).length;
+    const collectedCount = tracking?.collectedItems ? Object.values(tracking.collectedItems).filter(Boolean).length : 0;
     return Math.round((collectedCount / totalItems) * 100);
   };
 
   // Check if all items in the current stop are collected
   const areAllCurrentStopItemsCollected = () => {
-    if (!currentStop || currentStop.items.length === 0) return true;
+    if (!currentStop || !currentStop.items || currentStop.items.length === 0 || !tracking?.collectedItems) return true;
     
     return currentStop.items.every(item => tracking.collectedItems[item.id] === true);
   };
@@ -113,7 +117,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
   return (
     <div className="route-tracker">
       <div className="route-tracker-header">
-        <h2>Tracking: {route.name}</h2>
+        <h2>Tracking: {route?.name}</h2>
         <div className="route-tracker-stats">
           <div className="elapsed-time">
             <span className="stat-label">Elapsed Time:</span>
@@ -127,7 +131,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
       </div>
 
       <div className="route-tracker-content">
-        {route.stops.length === 0 ? (
+        {!route?.stops || route.stops.length === 0 ? (
           <div className="no-stops-message">
             <p>This route has no stops defined. You can complete it or cancel tracking.</p>
           </div>
@@ -168,18 +172,18 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
                   <p className="stop-description">{currentStop.description}</p>
                 )}
 
-                {currentStop.items.length === 0 ? (
+                {!currentStop.items || currentStop.items.length === 0 ? (
                   <p className="no-items-message">This stop has no items defined.</p>
                 ) : (
                   <ul className="items-list">
                     {currentStop.items.map(item => (
                       <li 
                         key={item.id} 
-                        className={`item ${tracking.collectedItems[item.id] ? 'collected' : ''}`}
+                        className={`item ${tracking?.collectedItems && tracking.collectedItems[item.id] ? 'collected' : ''}`}
                         onClick={() => toggleItemCollected(item.id)}
                       >
                         <div className="item-checkbox">
-                          {tracking.collectedItems[item.id] ? (
+                          {tracking?.collectedItems && tracking.collectedItems[item.id] ? (
                             <FontAwesomeIcon icon={faCheck} />
                           ) : null}
                         </div>

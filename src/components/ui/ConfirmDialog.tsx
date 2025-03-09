@@ -1,8 +1,16 @@
 import React from 'react';
 
+export interface ConfirmOptions {
+  title?: string;
+  message: string;
+  confirmText?: string;
+  cancelText?: string;
+  confirmButtonClass?: string;
+}
+
 interface ConfirmDialogProps {
   isOpen: boolean;
-  message: string;
+  options: ConfirmOptions;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -10,25 +18,34 @@ interface ConfirmDialogProps {
 /**
  * A reusable confirmation dialog component
  */
-const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, message, onConfirm, onCancel }) => {
+const ConfirmDialog: React.FC<ConfirmDialogProps> = ({ isOpen, options, onConfirm, onCancel }) => {
   if (!isOpen) return null;
+
+  const {
+    title,
+    message,
+    confirmText = 'Confirm',
+    cancelText = 'Cancel',
+    confirmButtonClass = ''
+  } = options;
 
   return (
     <div className="confirm-dialog-overlay">
       <div className="confirm-dialog">
+        {title && <div className="confirm-dialog-title">{title}</div>}
         <div className="confirm-dialog-message">{message}</div>
         <div className="confirm-dialog-buttons">
           <button 
             className="confirm-dialog-button confirm-dialog-button-cancel" 
             onClick={onCancel}
           >
-            Cancel
+            {cancelText}
           </button>
           <button 
-            className="confirm-dialog-button confirm-dialog-button-confirm" 
+            className={`confirm-dialog-button confirm-dialog-button-confirm ${confirmButtonClass}`} 
             onClick={onConfirm}
           >
-            Confirm
+            {confirmText}
           </button>
         </div>
       </div>
@@ -47,19 +64,24 @@ export function useConfirmDialog() {
     onCancel?: () => void;
   }>({
     isOpen: false,
-    message: '',
+    options: { message: '' }
   });
 
   /**
    * Show a confirmation dialog and return a promise that resolves to the user's choice
-   * @param message The message to display in the dialog
+   * @param options The options for the dialog (message is required)
    * @returns A promise that resolves to true if confirmed, false if canceled
    */
-  const confirm = React.useCallback((message: string): Promise<boolean> => {
+  const confirm = React.useCallback((options: string | ConfirmOptions): Promise<boolean> => {
+    // Handle both string message and options object
+    const dialogOptions: ConfirmOptions = typeof options === 'string' 
+      ? { message: options } 
+      : options;
+    
     return new Promise((resolve) => {
       setDialogState({
         isOpen: true,
-        message,
+        options: dialogOptions,
         onConfirm: () => {
           setDialogState(prev => ({ ...prev, isOpen: false }));
           resolve(true);
@@ -81,7 +103,7 @@ export function useConfirmDialog() {
 
   const dialogProps: ConfirmDialogProps = {
     isOpen: dialogState.isOpen,
-    message: dialogState.message,
+    options: dialogState.options,
     onConfirm: dialogState.onConfirm || closeDialog,
     onCancel: dialogState.onCancel || closeDialog
   };

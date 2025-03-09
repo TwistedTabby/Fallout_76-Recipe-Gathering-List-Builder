@@ -8,6 +8,12 @@ export interface NotificationState {
   visible: boolean;
 }
 
+export interface NotificationOptions {
+  message: string;
+  type?: NotificationType;
+  duration?: number;
+}
+
 /**
  * Custom hook for managing notifications
  */
@@ -20,25 +26,38 @@ export function useNotification() {
 
   /**
    * Show a notification message
-   * @param message The message to display
+   * @param messageOrOptions The message to display or an options object
    * @param type The type of notification (success, error, or info)
    * @param duration How long to display the notification in milliseconds (default: 3000)
    */
   const showNotification = useCallback((
-    message: string, 
+    messageOrOptions: string | NotificationOptions, 
     type: NotificationType = 'info',
     duration: number = 3000
   ) => {
+    // Handle both string message and options object
+    let message: string;
+    let notificationType: NotificationType = type;
+    let notificationDuration: number = duration;
+
+    if (typeof messageOrOptions === 'string') {
+      message = messageOrOptions;
+    } else {
+      message = messageOrOptions.message;
+      notificationType = messageOrOptions.type || type;
+      notificationDuration = messageOrOptions.duration || duration;
+    }
+
     setNotification({
       message,
-      type,
+      type: notificationType,
       visible: true
     });
     
     // Hide notification after the specified duration
     setTimeout(() => {
       setNotification(prev => ({ ...prev, visible: false }));
-    }, duration);
+    }, notificationDuration);
   }, []);
 
   /**

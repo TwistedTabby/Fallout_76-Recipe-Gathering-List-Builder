@@ -346,3 +346,75 @@ button.px-2.py-1.rounded.text-sm.mr-1.reorder-button[aria-label="Move item down"
   position: static !important;
   visibility: visible !important;
 } 
+
+/* Confirm Dialog Styles */
+.confirm-dialog-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+}
+
+.confirm-dialog {
+  background-color: white;
+  border-radius: 8px;
+  padding: 20px;
+  max-width: 500px;
+  width: 90%;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.confirm-dialog-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 10px;
+  color: var(--dark-contrast, #333);
+}
+
+.confirm-dialog-message {
+  margin-bottom: 20px;
+  color: var(--dark-contrast, #333);
+}
+
+.confirm-dialog-buttons {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.confirm-dialog-button {
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.confirm-dialog-button-cancel {
+  background-color: #f1f1f1;
+  color: #333;
+}
+
+.confirm-dialog-button-confirm {
+  background-color: var(--main-accent, #3498db);
+  color: white;
+}
+
+.confirm-dialog-button-cancel:hover {
+  background-color: #e1e1e1;
+}
+
+.confirm-dialog-button-confirm:hover {
+  background-color: var(--main-accent-dark, #2980b9);
+}
+
+/* Add class for warning button */
+.btn-warning {
+  background-color: var(--actionNegative, #e74c3c) !important;
+} 

@@ -11,6 +11,7 @@ interface RouteListProps {
   onEditRoute: (routeId: string) => void;
   onDeleteRoute: (routeId: string) => void;
   onStartTracking: (routeId: string) => void;
+  onDuplicateRoute?: (routeId: string) => void;
 }
 
 /**
@@ -23,7 +24,8 @@ const RouteList: React.FC<RouteListProps> = ({
   onCreateRoute,
   onEditRoute,
   onDeleteRoute,
-  onStartTracking
+  onStartTracking,
+  onDuplicateRoute
 }) => {
   return (
     <div className="route-list-container">

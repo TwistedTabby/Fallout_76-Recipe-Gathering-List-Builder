@@ -5,6 +5,28 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Fallout 76 Gathering List Builder</title>
+    <script>
+      // Script to enable right-click functionality
+      document.addEventListener('DOMContentLoaded', function() {
+        // Remove any contextmenu event listeners that prevent right-clicks
+        document.addEventListener('contextmenu', function(e) {
+          return true; // Allow default right-click behavior
+        }, true); // Use capture phase to intercept events before they reach other handlers
+        
+        // Override any CSS that might be preventing right-clicks
+        const style = document.createElement('style');
+        style.innerHTML = `
+          * {
+            user-select: auto !important;
+            pointer-events: auto !important;
+            -webkit-user-select: auto !important;
+            -moz-user-select: auto !important;
+            -ms-user-select: auto !important;
+          }
+        `;
+        document.head.appendChild(style);
+      });
+    </script>
   </head>
   <body>
     <div id="root"></div>

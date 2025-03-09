@@ -20,28 +20,41 @@ export function useFarmingTrackerDB() {
       throw new Error('IndexedDB is not available in this browser');
     }
     
-    return openDB<FarmingTrackerDB>('farming-tracker-db', 1, {
-      upgrade(db) {
-        // Create a store for routes
-        const routeStore = db.createObjectStore('routes', {
-          keyPath: 'id'
-        });
-        routeStore.createIndex('by-name', 'name');
+    return openDB<FarmingTrackerDB>('farming-tracker-db', 2, {
+      upgrade(db, oldVersion, newVersion, transaction) {
+        console.log(`Upgrading database from version ${oldVersion} to ${newVersion}`);
+        
+        // If this is a fresh database (version 0)
+        if (oldVersion < 1) {
+          // Create a store for routes
+          const routeStore = db.createObjectStore('routes', {
+            keyPath: 'id'
+          });
+          routeStore.createIndex('by-name', 'name');
 
-        // Create a store for active tracking
-        db.createObjectStore('activeTracking', {
-          keyPath: 'routeId'
-        });
+          // Create a store for current route ID
+          db.createObjectStore('currentRouteId', {
+            keyPath: 'id'
+          });
 
-        // Create a store for current route ID
-        db.createObjectStore('currentRouteId', {
-          keyPath: 'id'
-        });
-
-        // Create a store for item inventory
-        db.createObjectStore('itemInventory', {
-          keyPath: 'name'
-        });
+          // Create a store for item inventory
+          db.createObjectStore('itemInventory', {
+            keyPath: 'name'
+          });
+        }
+        
+        // If upgrading from version 1 to 2, delete and recreate the activeTracking store
+        if (oldVersion < 2) {
+          // Delete the old activeTracking store if it exists
+          if (db.objectStoreNames.contains('activeTracking')) {
+            db.deleteObjectStore('activeTracking');
+          }
+          
+          // Create a new activeTracking store with the correct keyPath
+          db.createObjectStore('activeTracking', {
+            keyPath: 'id'
+          });
+        }
       }
     });
   }, []);
@@ -244,13 +257,19 @@ export function useFarmingTrackerDB() {
       const db = await initDB();
       
       if (tracking) {
+        console.log('Saving active tracking:', { ...tracking, id: 'current' });
         // Add the id property for IndexedDB
         await db.put('activeTracking', { ...tracking, id: 'current' });
         localStorage.setItem('activeTracking', JSON.stringify(tracking));
       } else {
+        console.log('Deleting active tracking with key: current');
         // If tracking is null, delete from both storages
         await db.delete('activeTracking', 'current');
         localStorage.removeItem('activeTracking');
+        
+        // Verify deletion
+        const checkTracking = await db.get('activeTracking', 'current');
+        console.log('After deletion, tracking exists:', !!checkTracking);
       }
     } catch (error) {
       console.error('Error saving active tracking to IndexedDB:', error);
@@ -277,9 +296,8 @@ export function useFarmingTrackerDB() {
     try {
       const db = await initDB();
       
-      // Get all active tracking entries and find the most recent one
-      const activeTrackingEntries = await db.getAll('activeTracking');
-      const activeTrackingObj = activeTrackingEntries.length > 0 ? activeTrackingEntries[0] : null;
+      // Get the active tracking entry with id 'current'
+      const activeTrackingObj = await db.get('activeTracking', 'current');
       
       if (activeTrackingObj) {
         // Remove the id property before returning
@@ -289,7 +307,6 @@ export function useFarmingTrackerDB() {
       
       return null;
     } catch (error) {
-      console.error('Error loading active tracking from IndexedDB:', error);
       
       // Fallback to localStorage
       try {
@@ -299,7 +316,6 @@ export function useFarmingTrackerDB() {
         }
         return null;
       } catch (localStorageError) {
-        console.error('Error loading from localStorage fallback:', localStorageError);
         return null;
       }
     }

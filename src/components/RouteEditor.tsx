@@ -50,6 +50,16 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
     }
   }, [route]);
 
+  // Add a useEffect to log the stops when they change
+  useEffect(() => {
+    console.log('Route stops:', editedRoute.stops);
+    editedRoute.stops.forEach((stop, index) => {
+      console.log(`Stop ${index}:`, stop);
+      console.log(`Stop ${index} name:`, stop.name);
+      console.log(`Stop ${index} description:`, stop.description);
+    });
+  }, [editedRoute.stops]);
+
   // Handle name change
   const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const updatedRoute = { ...editedRoute, name: e.target.value };
@@ -181,7 +191,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
             placeholder="Enter route name"
           />
           {validationError && (
-            <div className="text-red-500 mt-1 text-sm">{validationError}</div>
+            <div className="validation-error mt-1 text-sm">{validationError}</div>
           )}
         </div>
         
@@ -210,7 +220,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
               Collect inventory data
             </label>
           </div>
-          <div className="text-sm text-gray-500 mt-1">
+          <div className="help-text text-sm mt-1">
             When checked, the app will ask for inventory counts for harvestable items for each stop at the start and end of the stop.
           </div>
         </div>
@@ -227,15 +237,23 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
           </div>
           
           {editedRoute.stops.length === 0 ? (
-            <div className="p-4 text-center bg-gray-50 rounded-lg">
-              <p className="text-gray-600">No stops added yet. Add a stop to get started.</p>
+            <div className="p-4 text-center rounded-lg empty-stops-message">
+              <p>No stops added yet. Add a stop to get started.</p>
             </div>
           ) : (
             <ul className="stops-list">
-              {editedRoute.stops.map((stop, index) => (
+              {editedRoute.stops.map((stop, index) => {
+                // Check if stop name is undefined, null, or empty
+                if (!stop.name) {
+                  console.error(`Stop at index ${index} has no name:`, stop);
+                }
+                
+                return (
                 <li key={stop.id} className="stop-item">
                   <div className="stop-info">
-                    <div className="stop-name">{stop.name}</div>
+                    <div className="stop-name">
+                      {stop.name || `Unnamed Stop ${index + 1}`}
+                    </div>
                     {stop.description && (
                       <div className="stop-description">{stop.description}</div>
                     )}
@@ -278,7 +296,8 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                     </button>
                   </div>
                 </li>
-              ))}
+                );
+              })}
             </ul>
           )}
         </div>

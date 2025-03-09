@@ -18,7 +18,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   // Initialize with stop data or empty values
   const [editedStop, setEditedStop] = useState<Stop>({
     id: stop?.id || '',
-    name: stop?.name || '',
+    name: stop?.name || 'New Stop',
     description: stop?.description || '',
     items: stop?.items || [],
     collectData: stop?.collectData || false
@@ -45,6 +45,12 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
         nameInputRef.current.select();
       }
     }
+  }, []);
+
+  // Log the initial stop data
+  useEffect(() => {
+    console.log("StopEditor initialized with stop:", stop);
+    console.log("editedStop:", editedStop);
   }, []);
 
   // Handle name change

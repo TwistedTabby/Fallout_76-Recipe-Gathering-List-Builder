@@ -262,14 +262,16 @@ const FarmingTrackerApp: React.FC = () => {
     console.log("currentRoute:", currentRoute);
     console.log("routes:", routes);
     
-    // Create a new stop
+    // Create a new stop with a guaranteed name
     const newStop: Stop = {
       id: uuidv4(),
-      name: 'New Stop',
+      name: 'New Stop',  // Ensure this is set
       description: '',
       items: [],
       collectData: false
     };
+
+    console.log("Created new stop:", newStop);
 
     // First, check if the routeId matches the currentRoute
     if (currentRoute && (currentRoute.id === routeId)) {

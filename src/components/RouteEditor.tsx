@@ -161,12 +161,12 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
   };
 
   return (
-    <div className="card route-editor">
+    <div className="card route-editor-container">
       <div className="card-header route-editor-header">
         <h2>{route ? 'Edit Route' : 'Create New Route'}</h2>
         <div className="route-editor-actions">
           <button 
-            className="btn btn-outline"
+            className="btn btn-primary"
             onClick={onCancel}
           >
             <FontAwesomeIcon icon={faTimes} /> Done
@@ -180,7 +180,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
           <input
             id="route-name"
             type="text"
-            className="form-control"
+            className="form-control route-editor-field"
             value={editedRoute.name}
             onChange={handleNameChange}
             onBlur={() => {
@@ -191,54 +191,58 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
             placeholder="Enter route name"
           />
           {validationError && (
-            <div className="validation-error mt-1 text-sm">{validationError}</div>
+            <div className="validation-error mt-1 text-sm text-red-600">{validationError}</div>
           )}
         </div>
         
-        <div className="form-group">
-          <label htmlFor="route-description" className="form-label">Description:</label>
-          <textarea
-            id="route-description"
-            className="form-control"
-            value={editedRoute.description}
-            onChange={handleDescriptionChange}
-            placeholder="Enter route description"
-            rows={3}
-          />
-        </div>
-        
-        <div className="form-group">
-          <div className="flex items-center">
-            <input
-              id="auto-inventory-checks"
-              type="checkbox"
-              className="mr-2"
-              checked={editedRoute.autoInventoryChecks}
-              onChange={handleAutoInventoryChecksChange}
+        <div className="form-row md:grid-cols-2">
+          <div className="form-group col-span-1 md:col-span-1 md:pr-2">
+            <label htmlFor="route-description" className="form-label">Description:</label>
+            <textarea
+              id="route-description"
+              className="form-control route-editor-field"
+              value={editedRoute.description}
+              onChange={handleDescriptionChange}
+              placeholder="Enter route description"
+              rows={3}
             />
-            <label htmlFor="auto-inventory-checks" className="form-label mb-0">
-              Collect inventory data
-            </label>
           </div>
-          <div className="help-text text-sm mt-1">
-            When checked, the app will ask for inventory counts for harvestable items for each stop at the start and end of the stop.
+          
+          <div className="form-group inventory-check-container col-span-1 md:col-span-1 md:pl-2">
+            <label className="form-label">Options:</label>
+            <div className="inventory-check-wrapper">
+              <div className="flex items-center checkbox-label-container">
+                <input
+                  id="auto-inventory-checks"
+                  type="checkbox"
+                  className="mr-2 inventory-check-input"
+                  checked={editedRoute.autoInventoryChecks}
+                  onChange={handleAutoInventoryChecksChange}
+                />
+                <label htmlFor="auto-inventory-checks" className="form-label mb-0 font-medium">
+                  Collect inventory data
+                </label>
+              </div>
+              <div className="help-text text-sm mt-1">
+                When checked, the app will ask for an inventory count of harvestable items at the start and end of the route.
+              </div>
+            </div>
           </div>
         </div>
         
         <div className="stops-section">
           <div className="stops-header">
             <h3>Stops</h3>
-            <button 
-              className="btn btn-secondary btn-sm"
-              onClick={handleAddStop}
-            >
-              <FontAwesomeIcon icon={faPlus} /> Add Stop
-            </button>
           </div>
           
           {editedRoute.stops.length === 0 ? (
-            <div className="p-4 text-center rounded-lg empty-stops-message">
-              <p>No stops added yet. Add a stop to get started.</p>
+            <div className="no-stops-message p-4 text-center rounded-lg">
+              <button 
+                className="btn btn-primary"
+                onClick={handleAddStop}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Your First Stop
+              </button>
             </div>
           ) : (
             <ul className="stops-list">
@@ -257,7 +261,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                     {stop.description && (
                       <div className="stop-description">{stop.description}</div>
                     )}
-                    <div className="stop-item-count">
+                    <div className="stop-meta">
                       {stop.items.length} item{stop.items.length !== 1 ? 's' : ''}
                     </div>
                   </div>
@@ -267,6 +271,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                       onClick={() => handleMoveStopUp(index)}
                       disabled={index === 0}
                       aria-label="Move stop up"
+                      title="Move Up"
                     >
                       <FontAwesomeIcon icon={faArrowUp} />
                     </button>
@@ -275,6 +280,7 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                       onClick={() => handleMoveStopDown(index)}
                       disabled={index === editedRoute.stops.length - 1}
                       aria-label="Move stop down"
+                      title="Move Down"
                     >
                       <FontAwesomeIcon icon={faArrowDown} />
                     </button>
@@ -299,6 +305,17 @@ const RouteEditor: React.FC<RouteEditorProps> = ({
                 );
               })}
             </ul>
+          )}
+          
+          {editedRoute.stops.length > 0 && (
+            <div className="add-stop-button-container">
+              <button 
+                className="btn btn-primary add-stop-button"
+                onClick={handleAddStop}
+              >
+                <FontAwesomeIcon icon={faPlus} /> Add Another Stop
+              </button>
+            </div>
           )}
         </div>
       </div>

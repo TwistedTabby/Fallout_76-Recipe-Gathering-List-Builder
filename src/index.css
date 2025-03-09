@@ -6,6 +6,11 @@
   font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;
+  
+  /* Fallback RGB values in case they're not set by the Layout component */
+  --secondary-accent-rgb: 0, 90, 156; /* Default Vault-Tec Blue */
+  --activeHighlight-rgb: 0, 78, 140;  /* Default active highlight blue */
+  --main-accent-rgb: 255, 204, 0;     /* Default Vault-Tec Gold */
 }
 
 body {
@@ -190,6 +195,7 @@ body {
   background-color: var(--light-contrast);
   border-radius: 0.75rem;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid var(--secondary-accent);
 }
 
 .route-list-header {
@@ -240,19 +246,20 @@ body {
   padding: 1rem;
   border-radius: 0.5rem;
   margin-bottom: 0.75rem;
-  background-color: rgba(0, 0, 0, 0.01);
+  background-color: rgba(var(--secondary-accent-rgb), 0.05);
   border: 1px solid var(--secondary-accent);
   transition: all 0.2s ease;
 }
 
 .route-item:hover {
-  background-color: rgba(0, 0, 0, 0.03);
+  background-color: rgba(var(--secondary-accent-rgb), 0.1);
+  border-color: var(--secondary-accent);
 }
 
 .route-item.active {
-  background-color: rgba(0, 91, 156, 0.15);
+  background-color: rgba(var(--activeHighlight-rgb), 0.15);
   color: var(--dark-contrast);
-  border-color: var(--secondary-accent);
+  border-color: var(--activeHighlight);
   border-width: 2px;
 }
 
@@ -264,6 +271,7 @@ body {
 .route-name {
   font-weight: 600;
   margin-bottom: 0.25rem;
+  color: var(--dark-contrast);
 }
 
 .route-meta {
@@ -293,17 +301,35 @@ body {
 
 .edit-button {
   background-color: var(--secondary-accent);
-  color: var(--light-contrast);
+  color: var(--actionText);
+  border: none;
+}
+
+.edit-button:hover {
+  filter: brightness(110%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .delete-button {
   background-color: var(--actionNegative);
-  color: var(--light-contrast);
+  color: var(--actionText);
+  border: none;
+}
+
+.delete-button:hover {
+  filter: brightness(110%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .start-button {
   background-color: var(--actionPositive);
-  color: var(--light-contrast);
+  color: var(--actionText);
+  border: none;
+}
+
+.start-button:hover {
+  filter: brightness(110%);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
 /* ===== ROUTE EDITOR STYLES ===== */

@@ -6,6 +6,20 @@ import { ColorScheme } from '../constants/colors';
 import logo from '../assets/TwistedTabby_FalloutLogo.PNG';
 import Cookies from 'js-cookie';
 
+// Helper function to convert hex color to RGB format
+const hexToRgb = (hex: string): string => {
+  // Remove the # if it exists
+  hex = hex.replace('#', '');
+  
+  // Parse the hex values
+  const r = parseInt(hex.substring(0, 2), 16);
+  const g = parseInt(hex.substring(2, 4), 16);
+  const b = parseInt(hex.substring(4, 6), 16);
+  
+  // Return as comma-separated RGB values
+  return `${r}, ${g}, ${b}`;
+};
+
 interface LayoutProps {
   title?: string;
   children?: React.ReactNode;
@@ -172,6 +186,11 @@ const Layout = ({ children, title }: LayoutProps) => {
         '--activeHighlight': colors.activeHighlight,
         '--activeButtonBg': colors.activeButtonBg,
         '--activeButtonText': colors.activeButtonText,
+        
+        // RGB values for use in rgba() functions
+        '--main-accent-rgb': hexToRgb(colors.mainAccent),
+        '--secondary-accent-rgb': hexToRgb(colors.secondaryAccent),
+        '--activeHighlight-rgb': hexToRgb(colors.activeHighlight),
         
         // Apply some basic styling using our colors
         backgroundColor: 'var(--background)',

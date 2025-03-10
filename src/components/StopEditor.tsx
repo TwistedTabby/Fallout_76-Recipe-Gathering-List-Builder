@@ -20,8 +20,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
     id: stop?.id || '',
     name: stop?.name || 'New Stop',
     description: stop?.description || '',
-    items: stop?.items || [],
-    collectData: stop?.collectData || false
+    items: stop?.items || []
   });
   
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -46,6 +45,11 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
       if (editedStop.name === 'New Stop') {
         nameInputRef.current.select();
       }
+    }
+    
+    // Show the item form by default if there are no items
+    if (editedStop.items.length === 0) {
+      setShowItemForm(true);
     }
   }, []);
 
@@ -74,13 +78,6 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
   // Handle description change
   const handleDescriptionChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const updatedStop = { ...editedStop, description: e.target.value };
-    setEditedStop(updatedStop);
-    onSave(updatedStop, true);
-  };
-
-  // Handle collect data change
-  const handleCollectDataChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const updatedStop = { ...editedStop, collectData: e.target.checked };
     setEditedStop(updatedStop);
     onSave(updatedStop, true);
   };
@@ -327,27 +324,6 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
               style={{height: "100%"}}
             />
           </div>
-          
-          <div className="form-group inventory-check-container" style={{marginBottom: 0}}>
-            <label className="form-label">Options:</label>
-            <div className="inventory-check-wrapper">
-              <div className="flex items-center checkbox-label-container">
-                <input
-                  id="stop-auto-inventory-checks"
-                  type="checkbox"
-                  className="mr-2 inventory-check-input"
-                  checked={editedStop.collectData}
-                  onChange={handleCollectDataChange}
-                />
-                <label htmlFor="stop-auto-inventory-checks" className="form-label mb-0 font-medium">
-                  Collect inventory data
-                </label>
-              </div>
-              <p className="help-text text-sm mt-1">
-                When checked, the app will ask for an inventory count of harvestable items at the start and end of the stop.
-              </p>
-            </div>
-          </div>
         </div>
         
         {editedStop.name === 'New Stop' && editedStop.items.length === 0 && (
@@ -361,33 +337,41 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
         
         <div className="stops-section">
           <div className="stops-header">
-            <h3>Items at this Stop</h3>
+            <h3 className="text-lg sm:text-xl">Items at this Stop</h3>
+            {!showItemForm && !editingItemId && (
+              <button 
+                className="btn btn-primary btn-sm"
+                onClick={() => setShowItemForm(true)}
+              >
+                <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add Item
+              </button>
+            )}
           </div>
           
           {/* Item Form - Only shown when adding a new item or editing an existing one */}
           {showItemForm || editingItemId ? (
-            <div className={`add-item-form p-4 rounded-md mb-4 ${editingItemId ? 'border border-secondary-accent' : ''}`}>
-              <h4 className="text-md font-semibold mb-2 flex justify-between items-center">
+            <div className={`add-item-form p-3 sm:p-4 rounded-md mb-3 sm:mb-4 ${editingItemId ? 'border border-secondary-accent' : ''}`}>
+              <h4 className="text-md font-semibold mb-2 flex flex-col sm:flex-row sm:justify-between sm:items-center">
                 {editingItemId ? (
-                  <span className="px-2 py-1 rounded-md inline-flex items-center bg-secondary-accent text-light-contrast">
+                  <span className="px-2 py-1 rounded-md inline-flex items-center bg-secondary-accent text-light-contrast mb-2 sm:mb-0">
                     <FontAwesomeIcon icon={faEdit} className="mr-1" /> Editing
                   </span>
                 ) : (
-                  <span>
+                  <span className="mb-2 sm:mb-0">
                     <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add New Item
                   </span>
                 )}
                 
-                <span className="text-sm text-dark-contrast opacity-80">
+                <span className="hidden sm:inline-block text-sm text-dark-contrast opacity-80">
                   <FontAwesomeIcon icon={faSave} className="mr-1" /> Tip: Press <kbd className="px-1 py-0.5 rounded bg-secondary-accent text-light-contrast border border-secondary-accent">CTRL+Enter</kbd> to {editingItemId ? "update" : "add"}
                 </span>
               </h4>
               
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-3 sm:gap-4">
                 {ITEM_TYPES_WITHOUT_QUANTITY.includes(newItemType) && !ITEM_TYPES_REQUIRING_NAME.includes(newItemType) ? (
                   // For items without quantity AND without required name, stack type and description vertically in a single column
-                  <div className="md:col-span-2">
-                    <div className="form-group mb-4">
+                  <div>
+                    <div className="form-group mb-3 sm:mb-4">
                       <label htmlFor="item-type" className="form-label">
                         {editingItemId ? "Item Type:" : "New Item Type:"}
                       </label>
@@ -395,7 +379,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         id="item-type"
                         value={newItemType}
                         onChange={(e) => setNewItemType(e.target.value as ItemType)}
-                        className="form-control route-editor-field"
+                        className="form-control route-editor-field h-10 sm:h-auto"
                         onKeyDown={handleKeyDown}
                         ref={itemTypeSelectRef}
                       >
@@ -410,7 +394,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                       <input
                         id="item-description"
                         type="text"
-                        className="form-control route-editor-field"
+                        className="form-control route-editor-field h-10 sm:h-auto"
                         value={newItemDescription}
                         onChange={(e) => setNewItemDescription(e.target.value)}
                         placeholder="Optional description or location hint"
@@ -419,9 +403,9 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                     </div>
                   </div>
                 ) : (
-                  // For items with quantity OR required name, use a two-column grid layout
+                  // For items with quantity OR required name, use a single column on mobile, two-column on larger screens
                   <>
-                    <div className="form-group">
+                    <div className="form-group mb-3 sm:mb-0">
                       <label htmlFor="item-type" className="form-label">
                         {editingItemId ? "Item Type:" : "New Item Type:"}
                       </label>
@@ -429,7 +413,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         id="item-type"
                         value={newItemType}
                         onChange={(e) => setNewItemType(e.target.value as ItemType)}
-                        className="form-control route-editor-field"
+                        className="form-control route-editor-field h-10 sm:h-auto"
                         onKeyDown={handleKeyDown}
                         ref={itemTypeSelectRef}
                       >
@@ -440,12 +424,12 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                     </div>
                     
                     {(ITEM_TYPES_REQUIRING_NAME.includes(newItemType) || !ITEM_TYPES_WITH_DEFAULT_NAME.includes(newItemType)) && (
-                      <div className="form-group">
+                      <div className="form-group mb-3 sm:mb-0">
                         <label htmlFor="item-name" className="form-label">Item Name:</label>
                         <input
                           id="item-name"
                           type="text"
-                          className={`form-control route-editor-field ${validationError && validationError.includes('Item name') ? 'validation-error' : ''}`}
+                          className={`form-control route-editor-field h-10 sm:h-auto ${validationError && validationError.includes('Item name') ? 'validation-error' : ''}`}
                           value={newItemName}
                           onChange={(e) => setNewItemName(e.target.value)}
                           placeholder="Enter item name"
@@ -463,7 +447,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         <input
                           id="item-quantity"
                           type="number"
-                          className="form-control route-editor-field"
+                          className="form-control route-editor-field h-10 sm:h-auto"
                           min="1"
                           value={newItemQuantity}
                           onChange={(e) => setNewItemQuantity(parseInt(e.target.value) || 1)}
@@ -471,19 +455,19 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                         />
                       </div>
                     ) : (
-                      // If no quantity field, add an empty div to maintain the grid layout
-                      <div className="form-group invisible">
+                      // If no quantity field, add an empty div to maintain the grid layout on larger screens
+                      <div className="form-group hidden sm:block">
                         <label className="form-label">&nbsp;</label>
                         <div className="h-10">&nbsp;</div>
                       </div>
                     )}
                     
-                    <div className="form-group">
+                    <div className="form-group sm:col-span-2">
                       <label htmlFor="item-description" className="form-label">Description:</label>
                       <input
                         id="item-description"
                         type="text"
-                        className="form-control route-editor-field"
+                        className="form-control route-editor-field h-10 sm:h-auto"
                         value={newItemDescription}
                         onChange={(e) => setNewItemDescription(e.target.value)}
                         placeholder="Optional description or location hint"
@@ -494,35 +478,40 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                 )}
               </div>
               
-              <div className="form-actions mt-4 flex justify-end">
-                <button 
-                  className="btn btn-outline mr-2"
-                  onClick={() => {
-                    resetNewItemForm();
-                    setShowItemForm(false);
-                  }}
-                >
-                  Cancel
-                </button>
+              <div className="form-actions mt-4 flex flex-col sm:flex-row sm:justify-end gap-2">
                 {editingItemId ? (
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => {
-                      handleSaveEditedItem();
-                      setShowItemForm(true);
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faSave} className="mr-1" /> Update
-                  </button>
+                  <>
+                    <button 
+                      className="btn btn-danger w-full sm:w-auto order-1 sm:order-none"
+                      onClick={() => setEditingItemId(null)}
+                    >
+                      <FontAwesomeIcon icon={faTimes} className="mr-1" /> Cancel Edit
+                    </button>
+                    <button 
+                      className="btn btn-primary w-full sm:w-auto order-0 sm:order-none mb-2 sm:mb-0"
+                      onClick={handleSaveEditedItem}
+                    >
+                      <FontAwesomeIcon icon={faSave} className="mr-1" /> Update Item
+                    </button>
+                  </>
                 ) : (
-                  <button 
-                    className="btn btn-primary"
-                    onClick={() => {
-                      handleAddItem();
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add to Stop
-                  </button>
+                  <>
+                    <button 
+                      className="btn btn-outline w-full sm:w-auto order-1 sm:order-none"
+                      onClick={() => {
+                        resetNewItemForm();
+                        setShowItemForm(false);
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faTimes} className="mr-1" /> Cancel
+                    </button>
+                    <button 
+                      className="btn btn-primary w-full sm:w-auto order-0 sm:order-none mb-2 sm:mb-0"
+                      onClick={handleAddItem}
+                    >
+                      <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add to Stop
+                    </button>
+                  </>
                 )}
               </div>
             </div>
@@ -530,22 +519,22 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           
           {/* Items List */}
           {editedStop.items.length > 0 ? (
-            <ul className="stops-list">
+            <ul className="stops-list mt-2">
               {editedStop.items.map((item, index) => (
-                <li key={item.id} className="stop-item">
-                  <div className="stop-info">
+                <li key={item.id} className="stop-item p-2 sm:p-3">
+                  <div className="stop-info flex-1">
                     {!ITEM_TYPES_WITH_DEFAULT_NAME.includes(item.type) && (
-                      <div className="stop-name">{item.name}</div>
+                      <div className="stop-name font-medium text-base">{item.name}</div>
                     )}
-                    <div className="stop-description">
-                      <span className="item-type">{item.type}</span>
+                    <div className="stop-description text-sm">
+                      <span className="item-type font-medium">{item.type}</span>
                       {!ITEM_TYPES_WITHOUT_QUANTITY.includes(item.type) && item.quantity > 1 && 
                         <span className="item-quantity ml-2">× {item.quantity}</span>
                       }
-                      {item.description && <span className="item-description ml-2">{item.description}</span>}
+                      {item.description && <span className="item-description ml-2 opacity-75">{item.description}</span>}
                     </div>
                   </div>
-                  <div className="stop-actions">
+                  <div className="stop-actions flex gap-1 sm:gap-2">
                     <button 
                       className="btn-icon-sm btn-primary reorder-button"
                       onClick={() => handleMoveItemUp(index)}
@@ -588,11 +577,12 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
           ) : (
             !showItemForm && !editingItemId ? (
               <div className="no-stops-message p-4 text-center rounded-lg">
+                <p className="text-sm mb-3">No items added to this stop yet.</p>
                 <button 
-                  className="btn btn-secondary"
+                  className="btn btn-primary"
                   onClick={() => setShowItemForm(true)}
                 >
-                  <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add Item
+                  <FontAwesomeIcon icon={faPlus} className="mr-1" /> Add First Item
                 </button>
               </div>
             ) : null

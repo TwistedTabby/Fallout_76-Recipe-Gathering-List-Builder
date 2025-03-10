@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { openDB } from 'idb';
-import { FarmingTrackerDB, Route, RouteProgress } from '../types/farmingTracker';
+import { FarmingTrackerDB, Route, RouteProgress, RouteHistory } from '../types/farmingTracker';
 import { isIndexedDBAvailable } from '../utils/farmingTrackerUtils';
 
 /**
@@ -20,8 +20,8 @@ export function useFarmingTrackerDB() {
       throw new Error('IndexedDB is not available in this browser');
     }
     
-    return openDB<FarmingTrackerDB>('farming-tracker-db', 3, {
-      upgrade(db, oldVersion, newVersion) {
+    return openDB<FarmingTrackerDB>('farming-tracker-db', 4, {
+      upgrade(db, oldVersion) {
         
         // If this is a fresh database (version 0)
         if (oldVersion < 1) {
@@ -66,6 +66,18 @@ export function useFarmingTrackerDB() {
           db.createObjectStore('activeTracking', {
             keyPath: 'routeId'
           });
+        }
+
+        // If upgrading from version 3 to 4, add the routeHistory store
+        if (oldVersion < 4) {
+          // Create a store for route history
+          const historyStore = db.createObjectStore('routeHistory', {
+            keyPath: 'id'
+          });
+          
+          // Create indexes for querying history by routeId and date
+          historyStore.createIndex('by-routeId', 'routeId');
+          historyStore.createIndex('by-date', 'startTime');
         }
       }
     });
@@ -269,8 +281,15 @@ export function useFarmingTrackerDB() {
       const db = await initDB();
       
       if (tracking) {
-        // Save the tracking data directly, routeId is already the keyPath
+        // Ensure we have a valid routeId as it's the keyPath
+        if (!tracking.routeId) {
+          throw new Error('Cannot save tracking without a routeId');
+        }
+        
+        // Save the tracking data directly
         await db.put('activeTracking', tracking);
+        
+        // Also save to localStorage as backup
         localStorage.setItem('activeTracking', JSON.stringify(tracking));
       } else {
         // If tracking is null, delete from both storages
@@ -284,16 +303,20 @@ export function useFarmingTrackerDB() {
     } catch (error) {
       console.error('Error saving active tracking to IndexedDB:', error);
       
-      // Fallback to localStorage
-      try {
-        if (tracking) {
+      // Try localStorage as fallback
+      if (tracking) {
+        try {
           localStorage.setItem('activeTracking', JSON.stringify(tracking));
-        } else {
-          localStorage.removeItem('activeTracking');
+        } catch (localStorageError) {
+          console.error('Error saving to localStorage fallback:', localStorageError);
+          throw localStorageError;
         }
-      } catch (localStorageError) {
-        console.error('Error saving to localStorage fallback:', localStorageError);
-        throw localStorageError;
+      } else {
+        try {
+          localStorage.removeItem('activeTracking');
+        } catch (localStorageError) {
+          console.error('Error removing from localStorage fallback:', localStorageError);
+        }
       }
     }
   }, [initDB]);
@@ -331,6 +354,230 @@ export function useFarmingTrackerDB() {
     }
   }, [initDB]);
 
+  /**
+   * Save a route history entry
+   * @param history The route history entry to save
+   */
+  const saveRouteHistory = useCallback(async (history: RouteHistory): Promise<void> => {
+    try {
+      const db = await initDB();
+      await db.put('routeHistory', history);
+      
+      // Also save to localStorage as backup
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        let histories = savedHistories ? JSON.parse(savedHistories) : [];
+        
+        // Check if this history entry already exists
+        const index = histories.findIndex((h: RouteHistory) => h.id === history.id);
+        
+        if (index >= 0) {
+          histories[index] = history;
+        } else {
+          histories.push(history);
+        }
+        
+        // Limit the number of histories stored in localStorage to prevent exceeding storage limits
+        if (histories.length > 100) {
+          histories = histories.slice(-100); // Keep only the most recent 100 entries
+        }
+        
+        localStorage.setItem('routeHistories', JSON.stringify(histories));
+      } catch (localStorageError) {
+        console.error('Error saving history to localStorage backup:', localStorageError);
+      }
+    } catch (error) {
+      console.error('Error saving route history to IndexedDB:', error);
+      
+      // Fallback to localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        let histories = savedHistories ? JSON.parse(savedHistories) : [];
+        
+        const index = histories.findIndex((h: RouteHistory) => h.id === history.id);
+        
+        if (index >= 0) {
+          histories[index] = history;
+        } else {
+          histories.push(history);
+        }
+        
+        localStorage.setItem('routeHistories', JSON.stringify(histories));
+      } catch (localStorageError) {
+        console.error('Error saving to localStorage fallback:', localStorageError);
+        throw localStorageError;
+      }
+    }
+  }, [initDB]);
+
+  /**
+   * Load all route history entries
+   * @returns A promise that resolves to an array of route history entries
+   */
+  const loadAllRouteHistory = useCallback(async (): Promise<RouteHistory[]> => {
+    try {
+      const db = await initDB();
+      const allHistory = await db.getAll('routeHistory');
+      return allHistory;
+    } catch (error) {
+      console.error('Error loading route history from IndexedDB:', error);
+      
+      // Fallback to localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          return JSON.parse(savedHistories);
+        }
+      } catch (localStorageError) {
+        console.error('Error loading from localStorage fallback:', localStorageError);
+      }
+      
+      return [];
+    }
+  }, [initDB]);
+
+  /**
+   * Load route history entries for a specific route
+   * @param routeId The ID of the route to load history for
+   * @returns A promise that resolves to an array of route history entries for the specified route
+   */
+  const loadRouteHistoryByRouteId = useCallback(async (routeId: string): Promise<RouteHistory[]> => {
+    try {
+      const db = await initDB();
+      const index = db.transaction('routeHistory').store.index('by-routeId');
+      const history = await index.getAll(routeId);
+      return history;
+    } catch (error) {
+      console.error(`Error loading route history for route ${routeId} from IndexedDB:`, error);
+      
+      // Fallback to localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          const histories = JSON.parse(savedHistories);
+          return histories.filter((h: RouteHistory) => h.routeId === routeId);
+        }
+      } catch (localStorageError) {
+        console.error('Error loading from localStorage fallback:', localStorageError);
+      }
+      
+      return [];
+    }
+  }, [initDB]);
+
+  /**
+   * Delete a route history entry
+   * @param historyId The ID of the history entry to delete
+   */
+  const deleteRouteHistory = useCallback(async (historyId: string): Promise<void> => {
+    try {
+      const db = await initDB();
+      await db.delete('routeHistory', historyId);
+      
+      // Also delete from localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          const histories = JSON.parse(savedHistories);
+          const updatedHistories = histories.filter((h: RouteHistory) => h.id !== historyId);
+          localStorage.setItem('routeHistories', JSON.stringify(updatedHistories));
+        }
+      } catch (localStorageError) {
+        console.error('Error updating localStorage after deletion:', localStorageError);
+      }
+    } catch (error) {
+      console.error(`Error deleting route history ${historyId} from IndexedDB:`, error);
+      
+      // Fallback to localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          const histories = JSON.parse(savedHistories);
+          const updatedHistories = histories.filter((h: RouteHistory) => h.id !== historyId);
+          localStorage.setItem('routeHistories', JSON.stringify(updatedHistories));
+        }
+      } catch (localStorageError) {
+        console.error('Error deleting from localStorage fallback:', localStorageError);
+        throw localStorageError;
+      }
+    }
+  }, [initDB]);
+
+  /**
+   * Delete all route history entries for a specific route
+   * @param routeId The ID of the route to delete all history for
+   */
+  const deleteAllRouteHistoryByRouteId = useCallback(async (routeId: string): Promise<void> => {
+    try {
+      const db = await initDB();
+      const index = db.transaction('routeHistory', 'readwrite').store.index('by-routeId');
+      const histories = await index.getAll(routeId);
+      
+      // Delete each history entry
+      const tx = db.transaction('routeHistory', 'readwrite');
+      for (const history of histories) {
+        await tx.store.delete(history.id);
+      }
+      await tx.done;
+      
+      // Also delete from localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          const allHistories = JSON.parse(savedHistories);
+          const updatedHistories = allHistories.filter((h: RouteHistory) => h.routeId !== routeId);
+          localStorage.setItem('routeHistories', JSON.stringify(updatedHistories));
+        }
+      } catch (localStorageError) {
+        console.error('Error updating localStorage after deletion:', localStorageError);
+      }
+    } catch (error) {
+      console.error(`Error deleting all route history for route ${routeId} from IndexedDB:`, error);
+      
+      // Fallback to localStorage
+      try {
+        const savedHistories = localStorage.getItem('routeHistories');
+        if (savedHistories) {
+          const histories = JSON.parse(savedHistories);
+          const updatedHistories = histories.filter((h: RouteHistory) => h.routeId !== routeId);
+          localStorage.setItem('routeHistories', JSON.stringify(updatedHistories));
+        }
+      } catch (localStorageError) {
+        console.error('Error deleting from localStorage fallback:', localStorageError);
+        throw localStorageError;
+      }
+    }
+  }, [initDB]);
+
+  /**
+   * Get a route by its ID
+   * @param routeId The ID of the route to retrieve
+   * @returns A promise that resolves to the route or null if not found
+   */
+  const getRouteById = useCallback(async (routeId: string): Promise<Route | null> => {
+    try {
+      const db = await initDB();
+      const route = await db.get('routes', routeId);
+      return route || null;
+    } catch (error) {
+      console.error(`Error getting route ${routeId} from IndexedDB:`, error);
+      
+      // Fallback to localStorage
+      try {
+        const savedRoutes = localStorage.getItem('farmingRoutes');
+        if (savedRoutes) {
+          const routes = JSON.parse(savedRoutes);
+          const route = routes.find((r: Route) => r.id === routeId);
+          return route || null;
+        }
+      } catch (localStorageError) {
+        console.error('Error loading from localStorage fallback:', localStorageError);
+      }
+      
+      return null;
+    }
+  }, [initDB]);
+
   return {
     initDB,
     isLoading,
@@ -343,6 +590,12 @@ export function useFarmingTrackerDB() {
     saveCurrentRouteId,
     loadCurrentRouteId,
     saveActiveTracking,
-    loadActiveTracking
+    loadActiveTracking,
+    saveRouteHistory,
+    loadAllRouteHistory,
+    loadRouteHistoryByRouteId,
+    deleteRouteHistory,
+    deleteAllRouteHistoryByRouteId,
+    getRouteById
   };
 } 

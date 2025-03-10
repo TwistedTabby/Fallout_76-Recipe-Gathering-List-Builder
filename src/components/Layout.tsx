@@ -148,6 +148,35 @@ const NavLinks = () => {
   );
 };
 
+// Footer component
+const Footer = () => {
+  const currentYear = new Date().getFullYear();
+  
+  return (
+    <footer className="py-4 px-6 text-center" style={{ 
+      backgroundColor: 'var(--light-contrast)', 
+      color: 'var(--dark-contrast)',
+      borderTop: '1px solid rgba(0,0,0,0.1)'
+    }}>
+      <div className="container mx-auto">
+        <p className="text-sm">
+          App copyright: © {currentYear} twistedtabby.com • <a 
+            href="https://creativecommons.org/licenses/by-nc/4.0/" 
+            target="_blank" 
+            rel="noopener noreferrer"
+            style={{ color: 'var(--secondary-accent)', textDecoration: 'none' }}
+          >
+            CC BY-NC License
+          </a>
+        </p>
+        <p className="text-sm mt-2" style={{ fontSize: '0.75rem', opacity: 0.8 }}>
+          Fallout 76 and some item names are the property and registered trademarks of Bethesda Softworks in context with this app.
+        </p>
+      </div>
+    </footer>
+  );
+};
+
 const Layout = ({ children, title }: LayoutProps) => {
   const [currentScheme, setCurrentScheme] = useState<ColorSchemeName>(() => {
     // Try to get the color scheme from cookie, fallback to default
@@ -182,6 +211,13 @@ const Layout = ({ children, title }: LayoutProps) => {
         '--actionPositive': colors.actionPositive,
         '--actionNegative': colors.actionNegative,
         '--actionText': colors.actionText,
+        // RGB versions for opacity/rgba usage
+        '--main-accent-rgb': hexToRgb(colors.mainAccent),
+        '--secondary-accent-rgb': hexToRgb(colors.secondaryAccent),
+        '--extra-pop-rgb': hexToRgb(colors.extraPop),
+        '--light-contrast-rgb': hexToRgb(colors.lightContrast),
+        '--actionPositive-rgb': hexToRgb(colors.actionPositive),
+        '--actionNegative-rgb': hexToRgb(colors.actionNegative),
         // Active state colors
         '--activeHighlight': colors.activeHighlight,
         '--activeButtonBg': colors.activeButtonBg,
@@ -191,6 +227,8 @@ const Layout = ({ children, title }: LayoutProps) => {
         backgroundColor: 'var(--background)',
         color: 'var(--dark-contrast)',
         minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column'
       } as React.CSSProperties}
     >
       <nav style={{ 
@@ -352,9 +390,11 @@ const Layout = ({ children, title }: LayoutProps) => {
         </div>
       </nav>
       
-      <main className="container mx-auto p-4">
+      <main className="container mx-auto px-0.5 sm:px-4 py-2 sm:py-4 max-w-full flex-grow">
         {children || <Outlet />}
       </main>
+      
+      <Footer />
     </div>
   );
 };

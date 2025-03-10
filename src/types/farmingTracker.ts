@@ -25,6 +25,11 @@ export interface FarmingTrackerDB extends DBSchema {
       lastUpdated: number;
     };
   };
+  routeHistory: {
+    key: string; // unique ID for the history entry
+    value: RouteHistory;
+    indexes: { 'by-routeId': string; 'by-date': number };
+  };
 }
 
 /**
@@ -47,7 +52,6 @@ export interface Stop {
   name: string;
   description: string;
   items: Item[];
-  collectData?: boolean; // Flag to indicate if baseline inventory data should be collected
 }
 
 /**
@@ -59,7 +63,6 @@ export interface Route {
   description: string;
   stops: Stop[];
   completedRuns?: number; // Track the number of completed runs
-  autoInventoryChecks?: boolean; // Flag to indicate if inventory should be checked before first and after last stop
 }
 
 /**
@@ -70,7 +73,13 @@ export interface RouteProgress {
   startTime: number;
   currentStopIndex: number;
   collectedItems: Record<string, boolean>; // Maps item IDs to collection status
-  notes: string;
+  collectedQuantities: Record<string, number>; // Maps item IDs to collected quantities
+  itemAnswers?: Record<string, 'yes' | 'no'>; // Maps item IDs to yes/no answers for special items
+  collectibleDetails?: Record<string, { 
+    type: string;
+    name: string; 
+    issueNumber?: number;
+  }>; // Maps item IDs to detailed collectible information
   inventoryData?: {
     preRoute?: Record<string, number>; // Maps item names to pre-route inventory counts
     postRoute?: Record<string, number>; // Maps item names to post-route inventory counts
@@ -79,6 +88,36 @@ export interface RouteProgress {
       preStop?: Record<string, number>; // Maps item names to pre-stop inventory counts
       postStop?: Record<string, number>; // Maps item names to post-stop inventory counts
       addedAmount?: Record<string, number>; // Amount added during this stop by item name
+    }>;
+  };
+}
+
+/**
+ * Represents a completed route run that is saved to history
+ */
+export interface RouteHistory {
+  id: string;
+  routeId: string;
+  routeName: string;
+  startTime: number;
+  endTime: number;
+  duration: number;
+  collectedItems: Record<string, boolean>;
+  collectedQuantities: Record<string, number>;
+  itemAnswers?: Record<string, 'yes' | 'no'>;
+  collectibleDetails?: Record<string, { 
+    type: string;
+    name: string; 
+    issueNumber?: number;
+  }>; // Maps item IDs to detailed collectible information
+  inventoryData?: {
+    preRoute?: Record<string, number>;
+    postRoute?: Record<string, number>;
+    addedItems?: Record<string, number>; // Calculated difference between pre and post
+    stops?: Record<string, {
+      preStop?: Record<string, number>;
+      postStop?: Record<string, number>;
+      addedAmount?: Record<string, number>;
     }>;
   };
 }

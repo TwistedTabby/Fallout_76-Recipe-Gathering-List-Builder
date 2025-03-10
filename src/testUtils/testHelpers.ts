@@ -27,20 +27,17 @@ export const mockRoutes = [
             collected: false,
             description: 'Test item description 1'
           }
-        ],
-        collectData: false
+        ]
       }
     ],
-    completedRuns: 0,
-    autoInventoryChecks: false
+    completedRuns: 0
   },
   {
     id: 'route-2',
     name: 'Test Route 2',
     description: 'Test route description 2',
     stops: [],
-    completedRuns: 2,
-    autoInventoryChecks: true
+    completedRuns: 2
   }
 ];
 
@@ -51,7 +48,9 @@ export const mockActiveTracking = {
   collectedItems: {
     'item-1': false
   },
-  notes: 'Test notes',
+  collectedQuantities: {
+    'item-1': 0
+  },
   inventoryData: {
     routeInventory: {}
   }

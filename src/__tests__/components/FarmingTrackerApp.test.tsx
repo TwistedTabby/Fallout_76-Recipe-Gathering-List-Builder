@@ -67,7 +67,7 @@ jest.mock('../../components/RouteTracker', () => ({
   __esModule: true,
   default: (props: any) => (
     <div data-testid="route-tracker">
-      <button onClick={() => props.onUpdateTracking({...props.tracking, notes: 'Updated notes'})}>
+      <button onClick={() => props.onUpdateTracking({...props.tracking})}>
         Update Tracking
       </button>
       {/* These buttons are for testing purposes */}
@@ -236,8 +236,7 @@ describe('FarmingTrackerApp', () => {
       routeId: 'route-1',
       startTime: Date.now(),
       currentStopIndex: 0,
-      collectedItems: {},
-      notes: ''
+      collectedItems: {}
     };
     mockLoadActiveTracking.mockResolvedValue(mockTracking);
     
@@ -374,8 +373,7 @@ describe('FarmingTrackerApp', () => {
       routeId: 'route-1',
       startTime: Date.now(),
       currentStopIndex: 0,
-      collectedItems: {},
-      notes: ''
+      collectedItems: {}
     };
     mockLoadActiveTracking.mockResolvedValue(mockTracking);
     

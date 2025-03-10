@@ -1,0 +1,12 @@
+Astoundingly Awesome Tales (13)
+Backwoodsman (10)
+Grognak the Barbarian (10)
+Guns and Bullets (10)
+Live & Love (9)
+Scouts' Life (10)
+Tales from the West Virginia Hills (5)
+Tesla Science Magazine (9)
+Tumbers Today (5)
+U.S. Covert Operations Manual (10)
+Unstoppables (5)
+Holotape

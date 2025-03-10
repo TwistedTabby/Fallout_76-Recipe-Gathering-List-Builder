@@ -107,7 +107,6 @@ describe('RouteTracker', () => {
           startTime: Date.now(),
           currentStopIndex: 0,
           collectedItems: {},
-          notes: '',
           route: mockRoute
         }}
         onUpdateTracking={jest.fn()}
@@ -157,7 +156,6 @@ describe('RouteTracker', () => {
           startTime: Date.now(),
           currentStopIndex: 0,
           collectedItems: {},
-          notes: '',
           route: mockRoute
         }}
         onUpdateTracking={jest.fn()}

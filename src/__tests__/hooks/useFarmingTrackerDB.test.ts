@@ -134,7 +134,7 @@ describe('useFarmingTrackerDB', () => {
       startTime: Date.now(),
       currentStopIndex: 0,
       collectedItems: { 'item-1': true, 'item-2': false },
-      notes: 'Test notes'
+      collectedQuantities: {}
     };
     
     // Save tracking data
@@ -165,7 +165,7 @@ describe('useFarmingTrackerDB', () => {
       startTime: Date.now(),
       currentStopIndex: 0,
       collectedItems: { 'item-1': true, 'item-2': false },
-      notes: 'Test notes'
+      collectedQuantities: {}
     };
     
     // Save tracking data
@@ -224,6 +224,95 @@ describe('useFarmingTrackerDB', () => {
     });
     
     expect(currentRouteId).toBeNull();
+  });
+
+  // Tests for route history functionality
+  test('should save and load route history', async () => {
+    const { result } = renderHook(() => useFarmingTrackerDB());
+    
+    // Wait for the initial loading to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    
+    // Create mock history data
+    const mockHistory = {
+      id: 'history-1',
+      routeId: 'route-1',
+      routeName: 'Test Route',
+      startTime: Date.now() - 3600000, // 1 hour ago
+      endTime: Date.now(),
+      duration: 3600000, // 1 hour
+      collectedItems: { 'item-1': true, 'item-2': false },
+      collectedQuantities: { 'item-1': 5, 'item-2': 0 }
+    };
+    
+    // Save history data
+    await act(async () => {
+      await result.current.saveRouteHistory(mockHistory);
+    });
+    
+    // Load all history data to verify
+    let loadedHistories;
+    await act(async () => {
+      loadedHistories = await result.current.loadAllRouteHistory();
+    });
+    
+    expect(loadedHistories).toHaveLength(1);
+    expect(loadedHistories[0]).toEqual(mockHistory);
+    
+    // Load history for specific route
+    let routeHistories;
+    await act(async () => {
+      routeHistories = await result.current.loadRouteHistoryByRouteId('route-1');
+    });
+    
+    expect(routeHistories).toHaveLength(1);
+    expect(routeHistories[0]).toEqual(mockHistory);
+  });
+  
+  test('should delete route history', async () => {
+    const { result } = renderHook(() => useFarmingTrackerDB());
+    
+    // Wait for the initial loading to complete
+    await act(async () => {
+      await new Promise(resolve => setTimeout(resolve, 0));
+    });
+    
+    // Create mock history data
+    const mockHistory = {
+      id: 'history-1',
+      routeId: 'route-1',
+      routeName: 'Test Route',
+      startTime: Date.now() - 3600000, // 1 hour ago
+      endTime: Date.now(),
+      duration: 3600000, // 1 hour
+      collectedItems: { 'item-1': true, 'item-2': false },
+      collectedQuantities: { 'item-1': 5, 'item-2': 0 }
+    };
+    
+    // Save history data
+    await act(async () => {
+      await result.current.saveRouteHistory(mockHistory);
+    });
+    
+    // Verify history was saved
+    let loadedHistories;
+    await act(async () => {
+      loadedHistories = await result.current.loadAllRouteHistory();
+    });
+    expect(loadedHistories).toHaveLength(1);
+    
+    // Delete history
+    await act(async () => {
+      await result.current.deleteRouteHistory('history-1');
+    });
+    
+    // Verify history was deleted
+    await act(async () => {
+      loadedHistories = await result.current.loadAllRouteHistory();
+    });
+    expect(loadedHistories).toHaveLength(0);
   });
 
   // Note: The hook doesn't have importRoutes or clearAllRoutes methods,

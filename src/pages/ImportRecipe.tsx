@@ -52,7 +52,8 @@ export default function ImportRecipe() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const parsedJson = JSON.parse(jsonInput);
+      // Parse the JSON but don't use it yet (placeholder for future implementation)
+      JSON.parse(jsonInput);
       // TODO: Add logic to handle the imported recipe
     } catch (error) {
       console.error('Invalid JSON:', error);

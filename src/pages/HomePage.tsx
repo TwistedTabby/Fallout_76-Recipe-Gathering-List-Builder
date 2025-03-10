@@ -17,13 +17,12 @@ const HomePage = () => {
           border: '1px solid var(--main-accent)'
         }}>
           <div className="card-body">
-            <h2 className="card-title" style={{ color: 'var(--main-accent)' }}>
+            <h2 className="card-title" style={{ color: 'var(--dark-contrast) !important' }}>
               Charisma Price Tool
             </h2>
             <p>Calculate optimal selling prices based on your Charisma and perks</p>
             <ul className="list-disc list-inside text-left">
               <li>Dynamic price calculations</li>
-              <li>Perk card combinations</li>
               <li>Maximize your caps earnings</li>
             </ul>
           </div>
@@ -34,14 +33,14 @@ const HomePage = () => {
           border: '1px solid var(--secondary-accent)'
         }}>
           <div className="card-body">
-            <h2 className="card-title" style={{ color: 'var(--secondary-accent)' }}>
+            <h2 className="card-title" style={{ color: 'var(--dark-contrast) !important' }}>
               Farming Route Tracker
             </h2>
             <p>Plan and optimize your resource gathering routes</p>
             <ul className="list-disc list-inside text-left">
               <li>Custom route creation</li>
-              <li>Resource respawn timers</li>
-              <li>Map integration</li>
+              <li>Track your progress</li>
+              <li>View your route history</li>
             </ul>
           </div>
         </Link>

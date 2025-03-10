@@ -24,6 +24,26 @@ const ITEM_TYPE_ICONS: Record<string, any> = {
   'Consumable': faWineBottle
 };
 
+// Colors for each item type
+const ITEM_TYPE_COLORS: Record<string, { bg: string, border: string }> = {
+  'Bobblehead': { 
+    bg: 'rgba(var(--main-accent-rgb), 0.1)', 
+    border: '3px solid var(--main-accent)' 
+  },
+  'Magazine': { 
+    bg: 'rgba(var(--extra-pop-rgb), 0.1)', 
+    border: '3px solid var(--extraPop)' 
+  },
+  'Consumable': { 
+    bg: 'rgba(var(--actionPositive-rgb), 0.1)', 
+    border: '3px solid var(--actionPositive)' 
+  },
+  'Event': { 
+    bg: 'rgba(var(--secondary-accent-rgb), 0.1)', 
+    border: '3px solid var(--secondary-accent)' 
+  }
+};
+
 /**
  * Component for displaying route history
  */
@@ -40,7 +60,7 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [sortedHistories, setSortedHistories] = useState<RouteHistoryType[]>(histories);
   const [activeItemTypeFilter, setActiveItemTypeFilter] = useState<string | null>(null);
-  const [selectedRoute, setSelectedRoute] = useState<any>(null);
+  // const [selectedRoute, setSelectedRoute] = useState<any>(null);
   const [routeCache, setRouteCache] = useState<Record<string, any>>({});
   const [loadingRoutes, setLoadingRoutes] = useState<Record<string, boolean>>({});
   
@@ -159,13 +179,6 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
     }
   };
 
-  const getRouteInfo = (routeId: string) => {
-    if (currentRoute && currentRoute.id === routeId) {
-      return currentRoute;
-    }
-    return routeCache[routeId] || null;
-  };
-
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleString();
   };
@@ -182,17 +195,35 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
   const itemTypeStats = useMemo(() => {
     const stats: Record<string, { total: number, runs: number }> = {};
     const consumableStats: Record<string, { total: number, runs: number }> = {};
+    const eventStats: Record<string, { total: number, runs: number }> = {};
     
     // Initialize stats for tracked item types
     TRACKED_ITEM_TYPES.forEach(type => {
       stats[type] = { total: 0, runs: 0 };
     });
     
+    // Get all consumables from the current route if available
+    const routeConsumables: Record<string, string> = {}; // Maps item IDs to names
+    const routeEvents: Record<string, string> = {}; // Maps item IDs to names
+    
+    if (currentRoute) {
+      currentRoute.stops.forEach(stop => {
+        stop.items.forEach(item => {
+          if (item.type.toLowerCase() === 'consumable') {
+            routeConsumables[item.id] = item.name;
+          } else if (item.type.toLowerCase() === 'event') {
+            routeEvents[item.id] = item.name;
+          }
+        });
+      });
+    }
+    
     // Process each history
     histories.forEach(history => {
       // We need to check if any items of each type were collected
       const typeCollected: Record<string, boolean> = {};
       const consumableCollected: Record<string, boolean> = {};
+      const eventCollected: Record<string, boolean> = {};
       
       // Process collected items
       Object.entries(history.collectedItems).forEach(([itemId, collected]) => {
@@ -210,6 +241,14 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
           // Get the name for consumables
           itemName = history.collectibleDetails[itemId].name;
           
+        } else if (routeConsumables[itemId]) {
+          // If we have this item in the current route's consumables
+          itemType = 'Consumable';
+          itemName = routeConsumables[itemId];
+        } else if (routeEvents[itemId]) {
+          // If we have this item in the current route's events
+          itemType = 'Event';
+          itemName = routeEvents[itemId];
         } else {
           // Default to unknown type if no details available
           itemType = 'Unknown';
@@ -229,7 +268,15 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
             }
             consumableStats[itemName].total += quantity;
             consumableCollected[itemName] = true;
-            
+          }
+          
+          // For events, track by name
+          if (itemType === 'Event' && itemName) {
+            if (!eventStats[itemName]) {
+              eventStats[itemName] = { total: 0, runs: 0 };
+            }
+            eventStats[itemName].total += quantity;
+            eventCollected[itemName] = true;
           }
         }
       });
@@ -247,10 +294,17 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
           consumableStats[name].runs += 1;
         }
       });
+      
+      // Count runs for each event type
+      Object.entries(eventCollected).forEach(([name, wasCollected]) => {
+        if (wasCollected && eventStats[name]) {
+          eventStats[name].runs += 1;
+        }
+      });
     });
     
-    return { itemStats: stats, consumableStats };
-  }, [histories]);
+    return { itemStats: stats, consumableStats, eventStats };
+  }, [histories, currentRoute]);
 
   if (histories.length === 0) {
     return (
@@ -335,8 +389,8 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
           <div className="item-type-stats mb-4">
             <h4 className="text-lg font-semibold mb-3" style={{ color: 'var(--light-contrast)' }}>Collection History by Type</h4>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-              {/* Display all item types including Consumable */}
-              {TRACKED_ITEM_TYPES.map(type => {
+              {/* Display non-consumable, non-event item types */}
+              {TRACKED_ITEM_TYPES.filter(type => type !== 'Consumable' && type !== 'Event').map(type => {
                 // Determine icon and colors based on type
                 const icon = ITEM_TYPE_ICONS[type] || faHistory;
                 let iconColor = 'var(--main-accent)';
@@ -349,12 +403,6 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                 } else if (type === 'Magazine') {
                   iconColor = '#333333'; // Dark for magazines
                   borderColor = '#333333';
-                } else if (type === 'Event') {
-                  iconColor = '#0066CC'; // Blue for events
-                  borderColor = '#0066CC';
-                } else if (type === 'Consumable') {
-                  iconColor = 'var(--actionPositive)'; // Green for consumables
-                  borderColor = 'var(--actionPositive)';
                 }
                 
                 return (
@@ -388,52 +436,85 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                   </div>
                 );
               })}
-            </div>
-            
-            {/* Individual Consumables Section */}
-            {(() => {
-              return Object.keys(itemTypeStats.consumableStats).length > 0 && (
-                <div className="consumables-section mt-4">
-                  <h4 className="text-lg font-semibold mb-3" style={{ color: 'var(--light-contrast)' }}>Individual Consumables</h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
-                    {Object.entries(itemTypeStats.consumableStats)
-                      .sort((a, b) => b[1].total - a[1].total) // Sort by total quantity (descending)
-                      .map(([name, stats]) => {
-                        return (
-                          <div 
-                            key={`consumable-${name}`} 
-                            className="item-type-card p-3 rounded-lg shadow cursor-pointer"
-                            onClick={() => setActiveItemTypeFilter(activeItemTypeFilter === 'Consumable' ? null : 'Consumable')}
-                            style={{
-                              backgroundColor: 'var(--light-contrast)',
-                              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
-                              transition: 'all 0.2s ease-in-out',
-                              transform: activeItemTypeFilter === 'Consumable' ? 'translateY(-2px)' : 'none',
-                              border: activeItemTypeFilter === 'Consumable' ? '2px solid var(--actionPositive)' : '1px solid transparent',
-                              borderLeft: '4px solid var(--actionPositive)'
-                            }}
-                          >
-                            <div className="flex items-center mb-2">
-                              <div className="item-type-icon mr-2" style={{ color: 'var(--actionPositive)', fontSize: '1.25rem' }}>
-                                <FontAwesomeIcon icon={ITEM_TYPE_ICONS['Consumable']} />
-                              </div>
-                              <div className="item-type-name font-medium text-sm" style={{ color: 'var(--dark-contrast)' }}>{name}</div>
-                            </div>
-                            <div className="item-type-stats">
-                              <div className="text-4xl font-bold mb-1" style={{ color: 'var(--dark-contrast)' }}>
-                                {stats.total || 0}
-                              </div>
-                              <div className="text-xs" style={{ color: 'var(--dark-contrast)', opacity: 0.7 }}>
-                                Found in {stats.runs || 0} of {histories.length} {histories.length === 1 ? 'run' : 'runs'} ({Math.round((stats.runs / histories.length) * 100)}%)
-                              </div>
-                            </div>
+              
+              {/* Display all individual consumables */}
+              {Object.entries(itemTypeStats.consumableStats)
+                .sort((a, b) => b[1].total - a[1].total) // Sort by total quantity (descending)
+                .map(([name, stats]) => {
+                  const iconColor = 'var(--actionPositive)'; // Green for consumables
+                  const borderColor = 'var(--actionPositive)';
+                  
+                  return (
+                    <div 
+                      key={`consumable-${name}`} 
+                      className="item-type-card p-3 rounded-lg shadow cursor-pointer"
+                      onClick={() => setActiveItemTypeFilter(activeItemTypeFilter === 'Consumable' ? null : 'Consumable')}
+                      style={{
+                        backgroundColor: 'var(--light-contrast)',
+                        boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                        transition: 'all 0.2s ease-in-out',
+                        transform: activeItemTypeFilter === 'Consumable' ? 'translateY(-2px)' : 'none',
+                        border: activeItemTypeFilter === 'Consumable' ? `2px solid ${borderColor}` : '1px solid transparent',
+                        borderLeft: `4px solid ${borderColor}`
+                      }}
+                    >
+                      <div className="flex items-center mb-2">
+                        <div className="item-type-icon mr-2" style={{ color: iconColor, fontSize: '1.25rem' }}>
+                          <FontAwesomeIcon icon={ITEM_TYPE_ICONS['Consumable']} />
+                        </div>
+                        <div className="item-type-name font-medium text-sm" style={{ color: 'var(--dark-contrast)' }}>{name}</div>
+                      </div>
+                      <div className="item-type-stats">
+                        <div className="text-4xl font-bold mb-1" style={{ color: 'var(--dark-contrast)' }}>
+                          {stats.total || 0}
+                        </div>
+                        <div className="text-xs" style={{ color: 'var(--dark-contrast)', opacity: 0.7 }}>
+                          Found in {stats.runs || 0} of {histories.length} {histories.length === 1 ? 'run' : 'runs'} ({Math.round((stats.runs / histories.length) * 100)}%)
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+                
+                {/* Display all individual events */}
+                {Object.entries(itemTypeStats.eventStats)
+                  .sort((a, b) => b[1].total - a[1].total) // Sort by total quantity (descending)
+                  .map(([name, stats]) => {
+                    const iconColor = '#0066CC'; // Blue for events
+                    const borderColor = '#0066CC';
+                    
+                    return (
+                      <div 
+                        key={`event-${name}`} 
+                        className="item-type-card p-3 rounded-lg shadow cursor-pointer"
+                        onClick={() => setActiveItemTypeFilter(activeItemTypeFilter === 'Event' ? null : 'Event')}
+                        style={{
+                          backgroundColor: 'var(--light-contrast)',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s ease-in-out',
+                          transform: activeItemTypeFilter === 'Event' ? 'translateY(-2px)' : 'none',
+                          border: activeItemTypeFilter === 'Event' ? `2px solid ${borderColor}` : '1px solid transparent',
+                          borderLeft: `4px solid ${borderColor}`
+                        }}
+                      >
+                        <div className="flex items-center mb-2">
+                          <div className="item-type-icon mr-2" style={{ color: iconColor, fontSize: '1.25rem' }}>
+                            <FontAwesomeIcon icon={ITEM_TYPE_ICONS['Event']} />
                           </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              );
-            })()}
+                          <div className="item-type-name font-medium text-sm" style={{ color: 'var(--dark-contrast)' }}>{name}</div>
+                        </div>
+                        <div className="item-type-stats">
+                          <div className="text-4xl font-bold mb-1" style={{ color: 'var(--dark-contrast)' }}>
+                            {stats.total || 0}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--dark-contrast)', opacity: 0.7 }}>
+                            Found in {stats.runs || 0} of {histories.length} {histories.length === 1 ? 'run' : 'runs'} ({Math.round((stats.runs / histories.length) * 100)}%)
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+            </div>
             
             {/* Reset History Button - Moved here */}
             {onResetAllHistory && (
@@ -747,8 +828,8 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                             .filter(detail => detail.type === 'bobblehead')
                             .length > 0 && (
                             <div className="collectible-group p-2 rounded" style={{ 
-                              backgroundColor: 'rgba(var(--main-accent-rgb), 0.1)',
-                              borderLeft: '3px solid var(--main-accent)',
+                              backgroundColor: ITEM_TYPE_COLORS['Bobblehead'].bg,
+                              borderLeft: ITEM_TYPE_COLORS['Bobblehead'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
                               <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--dark-contrast)' }}>Bobbleheads</h6>
@@ -767,8 +848,8 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                             .filter(detail => detail.type === 'magazine')
                             .length > 0 && (
                             <div className="collectible-group p-2 rounded" style={{ 
-                              backgroundColor: 'rgba(var(--extra-pop-rgb), 0.1)',
-                              borderLeft: '3px solid var(--extraPop)',
+                              backgroundColor: ITEM_TYPE_COLORS['Magazine'].bg,
+                              borderLeft: ITEM_TYPE_COLORS['Magazine'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
                               <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--dark-contrast)' }}>Magazines</h6>
@@ -790,133 +871,167 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                       </div>
                     )}
                     
-                    {/* Consumable Details */}
-                    {Object.entries(history.collectedItems)
-                      .filter(([itemId, collected]) => {
-                        if (!collected) return false;
+                    {/* Consumables Section - Combined from collectibleDetails and other sources */}
+                    {(() => {
+                      // Get consumables from collectibleDetails
+                      const consumablesFromDetails = history.collectibleDetails 
+                        ? Object.entries(history.collectibleDetails)
+                            .filter(([itemId, detail]) => 
+                              detail.type.toLowerCase() === 'consumable' && history.collectedItems[itemId]
+                            )
+                        : [];
+                      
+                      // Get consumables without collectibleDetails
+                      const consumablesWithoutDetails = Object.entries(history.collectedItems)
+                        .filter(([itemId, collected]) => {
+                          if (!collected) return false;
+                          
+                          // Skip items that already have collectibleDetails
+                          if (history.collectibleDetails && history.collectibleDetails[itemId]) {
+                            return false;
+                          }
+                          
+                          // Check if it's a consumable based on item ID
+                          const itemType = itemId.split('-')[0];
+                          return itemType === 'Consumable';
+                        });
+                      
+                      // If we have any consumables, show the section
+                      if (consumablesFromDetails.length > 0 || consumablesWithoutDetails.length > 0) {
+                        // Group consumables by name with counts
+                        const groupedConsumables: Record<string, number> = {};
                         
-                        // Check if it's a consumable
-                        if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                          return history.collectibleDetails[itemId].type.toLowerCase() === 'consumable';
-                        }
+                        // Process consumables from collectibleDetails
+                        consumablesFromDetails.forEach(([itemId, detail]) => {
+                          const quantity = history.collectedQuantities?.[itemId] || 1;
+                          groupedConsumables[detail.name] = (groupedConsumables[detail.name] || 0) + quantity;
+                        });
                         
-                        // Fall back to extracting type from the item ID
-                        const itemType = itemId.split('-')[0];
-                        return itemType === 'Consumable';
-                      }).length > 0 && (
-                      <div className="consumable-stats mb-2">
-                        <h5 className="text-sm font-semibold mb-1" style={{ color: 'var(--dark-contrast)' }}>Consumable Details</h5>
-                        <div className="grid grid-cols-1 gap-2">
-                          <div className="collectible-group p-2 rounded" style={{ 
-                            backgroundColor: 'rgba(var(--actionPositive-rgb), 0.1)',
-                            borderLeft: '3px solid var(--actionPositive)',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--actionPositive)' }}>Consumables</h6>
-                            <ul className="list-disc pl-4 mb-0">
-                              {Object.entries(history.collectedItems)
-                                .filter(([itemId, collected]) => {
-                                  if (!collected) return false;
-                                  
-                                  // Check if it's a consumable
-                                  if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                                    return history.collectibleDetails[itemId].type.toLowerCase() === 'consumable';
-                                  }
-                                  
-                                  // Fall back to extracting type from the item ID
-                                  const itemType = itemId.split('-')[0];
-                                  return itemType === 'Consumable';
-                                })
-                                .map(([itemId, _]) => {
-                                  // Get the name and quantity
-                                  let name = '';
-                                  if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                                    name = history.collectibleDetails[itemId].name;
-                                  } else {
-                                    const parts = itemId.split('-');
-                                    name = parts.slice(1).join('-');
-                                  }
-                                  
-                                  const quantity = history.collectedQuantities?.[itemId] || 1;
-                                  
-                                  return (
-                                    <li key={itemId} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
-                                      <span>{name}</span>
-                                      {quantity > 1 && (
-                                        <span className="font-semibold ml-2" style={{ color: 'var(--actionPositive)' }}>
-                                          ×{quantity}
-                                        </span>
-                                      )}
-                                    </li>
-                                  );
-                                })}
-                            </ul>
+                        // Process consumables without collectibleDetails
+                        consumablesWithoutDetails.forEach(([itemId, _]) => {
+                          // Extract name from itemId (format: Consumable-name)
+                          const namePart = itemId.split('-').slice(1).join('-');
+                          const name = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+                          const quantity = history.collectedQuantities?.[itemId] || 1;
+                          groupedConsumables[name] = (groupedConsumables[name] || 0) + quantity;
+                        });
+                        
+                        return (
+                          <div className="consumables-stats mb-2">
+                            <h5 className="text-sm font-semibold mb-1" style={{ color: 'var(--dark-contrast)' }}>Consumables</h5>
+                            <div className="collectible-group p-2 rounded" style={{ 
+                              backgroundColor: ITEM_TYPE_COLORS['Consumable'].bg,
+                              borderLeft: ITEM_TYPE_COLORS['Consumable'].border,
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                            }}>
+                              <ul className="list-disc pl-4 mb-0">
+                                {Object.entries(groupedConsumables).map(([name, quantity], index) => (
+                                  <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                    <span>{name}</span>
+                                    {quantity > 1 && (
+                                      <span className="font-semibold ml-2" style={{ color: 'var(--actionPositive)' }}>
+                                        ×{quantity}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      return null;
+                    })()}
                     
-                    {/* Event Details */}
-                    {Object.entries(history.collectedItems)
-                      .filter(([itemId, collected]) => {
-                        if (!collected) return false;
+                    {/* Events Section - Combined from collectibleDetails and other sources */}
+                    {(() => {
+                      // Get events from collectibleDetails
+                      const eventsFromDetails = history.collectibleDetails 
+                        ? Object.entries(history.collectibleDetails)
+                            .filter(([itemId, detail]) => 
+                              detail.type.toLowerCase() === 'event' && history.collectedItems[itemId]
+                            )
+                        : [];
                         
-                        // Check if it's an event
-                        if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                          return history.collectibleDetails[itemId].type.toLowerCase() === 'event';
-                        }
+                      // Get events without collectibleDetails
+                      const eventsWithoutDetails = Object.entries(history.collectedItems)
+                        .filter(([itemId, collected]) => {
+                          if (!collected) return false;
+                          
+                          // Skip items that already have collectibleDetails
+                          if (history.collectibleDetails && history.collectibleDetails[itemId]) {
+                            return false;
+                          }
+                          
+                          // Check if it's an event based on item ID
+                          const itemType = itemId.split('-')[0];
+                          return itemType === 'Event';
+                        });
                         
-                        // Fall back to extracting type from the item ID
-                        const itemType = itemId.split('-')[0];
-                        return itemType === 'Event';
-                      }).length > 0 && (
-                      <div className="event-stats mb-2">
-                        <h5 className="text-sm font-semibold mb-1" style={{ color: 'var(--dark-contrast)' }}>Event Details</h5>
-                        <div className="grid grid-cols-1 gap-2">
-                          <div className="collectible-group p-2 rounded" style={{ 
-                            backgroundColor: 'rgba(var(--secondary-accent-rgb), 0.1)',
-                            borderLeft: '3px solid var(--secondary-accent)',
-                            boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
-                          }}>
-                            <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--secondary-accent)' }}>Events</h6>
-                            <ul className="list-disc pl-4 mb-0">
-                              {Object.entries(history.collectedItems)
-                                .filter(([itemId, collected]) => {
-                                  if (!collected) return false;
-                                  
-                                  // Check if it's an event
-                                  if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                                    return history.collectibleDetails[itemId].type.toLowerCase() === 'event';
-                                  }
-                                  
-                                  // Fall back to extracting type from the item ID
-                                  const itemType = itemId.split('-')[0];
-                                  return itemType === 'Event';
-                                })
-                                .map(([itemId, _]) => {
-                                  // Get the name
-                                  let name = '';
-                                  if (history.collectibleDetails && history.collectibleDetails[itemId]) {
-                                    name = history.collectibleDetails[itemId].name;
-                                  } else {
-                                    const parts = itemId.split('-');
-                                    name = parts.slice(1).join('-');
-                                  }
-                                  
-                                  // Get the answer (yes/no)
-                                  const answer = history.itemAnswers?.[itemId];
-                                  
-                                  return (
-                                    <li key={itemId} className="text-xs" style={{ color: 'var(--dark-contrast)' }}>
-                                      {name} {answer ? `(${answer})` : ''}
-                                    </li>
-                                  );
-                                })}
-                            </ul>
+                      // If we have any events, show the section
+                      if (eventsFromDetails.length > 0 || eventsWithoutDetails.length > 0) {
+                        // Group events by name
+                        const groupedEvents: Record<string, { count: number, answers: string[] }> = {};
+                        
+                        // Process events from collectibleDetails
+                        eventsFromDetails.forEach(([itemId, detail]) => {
+                          const answer = history.itemAnswers?.[itemId];
+                          if (!groupedEvents[detail.name]) {
+                            groupedEvents[detail.name] = { count: 0, answers: [] };
+                          }
+                          groupedEvents[detail.name].count++;
+                          if (answer) {
+                            groupedEvents[detail.name].answers.push(answer);
+                          }
+                        });
+                        
+                        // Process events without collectibleDetails
+                        eventsWithoutDetails.forEach(([itemId, _]) => {
+                          // Extract name from itemId (format: Event-name)
+                          const namePart = itemId.split('-').slice(1).join('-');
+                          const name = namePart.charAt(0).toUpperCase() + namePart.slice(1);
+                          const answer = history.itemAnswers?.[itemId];
+                          
+                          if (!groupedEvents[name]) {
+                            groupedEvents[name] = { count: 0, answers: [] };
+                          }
+                          groupedEvents[name].count++;
+                          if (answer) {
+                            groupedEvents[name].answers.push(answer);
+                          }
+                        });
+                        
+                        return (
+                          <div className="events-stats mb-2">
+                            <h5 className="text-sm font-semibold mb-1" style={{ color: 'var(--dark-contrast)' }}>Events</h5>
+                            <div className="collectible-group p-2 rounded" style={{ 
+                              backgroundColor: ITEM_TYPE_COLORS['Event'].bg,
+                              borderLeft: ITEM_TYPE_COLORS['Event'].border,
+                              boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
+                            }}>
+                              <ul className="list-disc pl-4 mb-0">
+                                {Object.entries(groupedEvents).map(([name, { count, answers }], index) => (
+                                  <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                    <span>
+                                      {name}
+                                      {answers.length > 0 && ` (${answers.join(', ')})`}
+                                    </span>
+                                    {count > 1 && (
+                                      <span className="font-semibold ml-2" style={{ color: 'var(--secondary-accent)' }}>
+                                        ×{count}
+                                      </span>
+                                    )}
+                                  </li>
+                                ))}
+                              </ul>
+                            </div>
                           </div>
-                        </div>
-                      </div>
-                    )}
+                        );
+                      }
+                      
+                      return null;
+                    })()}
                   </div>
                 )}
               </div>

@@ -6,7 +6,7 @@ import CollectibleSelector from './CollectibleSelector';
 
 interface ItemConfirmationDialogProps {
   item: Item;
-  confirmationType: 'bobblehead' | 'magazine' | 'consumable' | 'event' | null;
+  confirmationType: 'bobblehead' | 'magazine' | 'consumable' | 'event' | 'spawned' | null;
   onConfirm: (quantity?: number, answer?: 'yes' | 'no', collectibleDetails?: { name: string, issueNumber?: number }) => void;
   onCancel: () => void;
 }
@@ -75,6 +75,7 @@ const ItemConfirmationDialog: React.FC<ItemConfirmationDialogProps> = ({
           {confirmationType === 'magazine' && 'Confirm Magazine Collection'}
           {confirmationType === 'consumable' && 'Specify Quantity Collected'}
           {confirmationType === 'event' && 'Confirm Event Completion'}
+          {confirmationType === 'spawned' && 'Confirm Item Spawn'}
         </div>
         
         <div className="confirm-dialog-content">
@@ -126,6 +127,16 @@ const ItemConfirmationDialog: React.FC<ItemConfirmationDialogProps> = ({
           {confirmationType === 'event' && (
             <>
               <p>Did the event "{item.name}" occur?</p>
+              {item.description && (
+                <div className="item-description-box">
+                  <p>{item.description}</p>
+                </div>
+              )}
+            </>
+          )}
+          {confirmationType === 'spawned' && (
+            <>
+              <p>Did "{item.name}" spawn?</p>
               {item.description && (
                 <div className="item-description-box">
                   <p>{item.description}</p>

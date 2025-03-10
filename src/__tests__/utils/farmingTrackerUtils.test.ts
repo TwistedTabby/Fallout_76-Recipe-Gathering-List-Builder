@@ -13,6 +13,7 @@ describe('farmingTrackerUtils', () => {
       expect(requiresCustomName('Task')).toBe(true);
       expect(requiresCustomName('Harvestable')).toBe(true);
       expect(requiresCustomName('Consumable')).toBe(true);
+      expect(requiresCustomName('Spawned')).toBe(true);
     });
 
     test('should return false for item types not requiring custom names', () => {
@@ -33,6 +34,7 @@ describe('farmingTrackerUtils', () => {
       expect(usesDefaultName('Task')).toBe(false);
       expect(usesDefaultName('Harvestable')).toBe(false);
       expect(usesDefaultName('Consumable')).toBe(false);
+      expect(usesDefaultName('Spawned')).toBe(false);
       expect(usesDefaultName('Unknown')).toBe(false);
     });
   });

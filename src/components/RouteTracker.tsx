@@ -36,7 +36,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
   const [elapsedTime, setElapsedTime] = useState<string>('00:00:00');
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [currentItem, setCurrentItem] = useState<Item | null>(null);
-  const [confirmationType, setConfirmationType] = useState<'bobblehead' | 'magazine' | 'consumable' | 'event' | null>(null);
+  const [confirmationType, setConfirmationType] = useState<'bobblehead' | 'magazine' | 'consumable' | 'event' | 'spawned' | null>(null);
   const [showItemDescription, setShowItemDescription] = useState<string | null>(null);
   const [showStickyHeader, setShowStickyHeader] = useState(false);
   
@@ -115,7 +115,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
     
     // For special items that need confirmation when collecting
     if (itemType === 'bobblehead' || itemType === 'magazine' || 
-        itemType === 'consumable' || itemType === 'event') {
+        itemType === 'consumable' || itemType === 'event' || itemType === 'spawned') {
       setConfirmationType(itemType);
       setShowConfirmDialog(true);
     } else {

@@ -9,7 +9,7 @@ import { Item, Route, Stop } from '../types/farmingTracker';
  * @param item The item to check
  * @returns The type of the item or null if not a special type
  */
-export const getItemType = (item: Item): 'bobblehead' | 'magazine' | 'consumable' | 'event' | null => {
+export const getItemType = (item: Item): 'bobblehead' | 'magazine' | 'consumable' | 'event' | 'spawned' | null => {
   if (!item) return null;
   
   // Use the item's type property if available
@@ -19,6 +19,7 @@ export const getItemType = (item: Item): 'bobblehead' | 'magazine' | 'consumable
     if (lowerType === 'magazine') return 'magazine';
     if (lowerType === 'event') return 'event';
     if (lowerType === 'consumable') return 'consumable';
+    if (lowerType === 'spawned') return 'spawned';
   }
   
   // Fallback to quantity-based detection for consumables

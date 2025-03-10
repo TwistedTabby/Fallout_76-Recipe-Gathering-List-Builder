@@ -127,10 +127,11 @@ export interface RouteHistory {
  */
 export const DEFAULT_ITEM_TYPES = [
   'Bobblehead',
-  'Magazine',
-  'Event',
   'Consumable',
+  'Event',
   'Harvestable',
+  'Magazine',
+  'Spawned',
   'Task'
 ] as const;
 
@@ -142,7 +143,7 @@ export type ItemType = typeof DEFAULT_ITEM_TYPES[number];
 /**
  * Item types that require a custom name to be specified
  */
-export const ITEM_TYPES_REQUIRING_NAME = ['Event', 'Task', 'Harvestable', 'Consumable'];
+export const ITEM_TYPES_REQUIRING_NAME = ['Event', 'Task', 'Harvestable', 'Consumable', 'Spawned'];
 
 /**
  * Item types that use their type as the default name
@@ -152,4 +153,4 @@ export const ITEM_TYPES_WITH_DEFAULT_NAME = ['Bobblehead', 'Magazine'];
 /**
  * Item types that don't need a quantity field
  */
-export const ITEM_TYPES_WITHOUT_QUANTITY = ['Bobblehead', 'Magazine', 'Event', 'Task', 'Harvestable']; 
+export const ITEM_TYPES_WITHOUT_QUANTITY = ['Bobblehead', 'Magazine', 'Event', 'Task', 'Harvestable', 'Spawned']; 

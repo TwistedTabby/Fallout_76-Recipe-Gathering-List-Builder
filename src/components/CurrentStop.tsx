@@ -51,7 +51,7 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
     const itemType = getItemType(item);
     const collectedQuantity = collectedQuantities[item.id] || 0;
     const itemAnswer = itemAnswers[item.id];
-    const showAnswer = isCollected && itemAnswer && (itemType === 'bobblehead' || itemType === 'magazine' || itemType === 'event');
+    const showAnswer = isCollected && itemAnswer && (itemType === 'bobblehead' || itemType === 'magazine' || itemType === 'event' || itemType === 'spawned');
     
     return (
       <button 

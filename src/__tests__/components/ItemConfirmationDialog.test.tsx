@@ -87,6 +87,30 @@ describe('ItemConfirmationDialog', () => {
     expect(screen.getByText('Cancel')).toBeInTheDocument();
   });
   
+  test('should render spawned item confirmation dialog correctly', () => {
+    const spawnedItem: Item = {
+      ...mockItem,
+      type: 'spawned'
+    };
+    
+    render(
+      <ItemConfirmationDialog
+        item={spawnedItem}
+        confirmationType="spawned"
+        onConfirm={mockOnConfirm}
+        onCancel={mockOnCancel}
+      />
+    );
+    
+    expect(screen.getByText('Confirm Item Spawn')).toBeInTheDocument();
+    expect(screen.getByText(`Did "${mockItem.name}" spawn?`)).toBeInTheDocument();
+    
+    // Check for Yes, No, and Cancel buttons
+    expect(screen.getByText('Yes')).toBeInTheDocument();
+    expect(screen.getByText('No')).toBeInTheDocument();
+    expect(screen.getByText('Cancel')).toBeInTheDocument();
+  });
+  
   test('should render consumable dialog with quantity controls', () => {
     const consumableItem: Item = {
       ...mockItem,

@@ -1,6 +1,6 @@
 import React, { useMemo } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faMapMarkedAlt, faCheckCircle, faListAlt, faBoxes, faWineBottle, faLeaf } from '@fortawesome/free-solid-svg-icons';
+import { faMapMarkedAlt, faCheckCircle, faListAlt, faBoxes, faWineBottle, faLeaf, faCalendarDay, faCube } from '@fortawesome/free-solid-svg-icons';
 import { Route } from '../types/farmingTracker';
 
 interface RouteStatisticsProps {
@@ -36,13 +36,17 @@ const RouteStatistics: React.FC<RouteStatisticsProps> = ({
       consumables: [] as { name: string, count: number, totalQuantity: number }[],
       bobbleheads: { total: 0, uniqueCount: 0, stopCount: 0, stopsWithBobbleheads: new Set<string>() },
       magazines: { total: 0, uniqueCount: 0, stopCount: 0, stopsWithMagazines: new Set<string>() },
-      harvestables: [] as { name: string, stopCount: number }[]
+      harvestables: [] as { name: string, stopCount: number }[],
+      events: [] as { name: string, stopCount: number }[],
+      spawned: [] as { name: string, stopCount: number }[]
     };
     
     // Process each stop
     route.stops.forEach(stop => {
       // Track harvestables in this stop to avoid counting duplicates
       const harvestablesInStop = new Set<string>();
+      const eventsInStop = new Set<string>();
+      const spawnedInStop = new Set<string>();
       let hasBobblehead = false;
       let hasMagazine = false;
       
@@ -98,8 +102,44 @@ const RouteStatistics: React.FC<RouteStatisticsProps> = ({
             }
             break;
             
+          case 'Event':
+            // Only count each event once per stop
+            if (!eventsInStop.has(item.name)) {
+              eventsInStop.add(item.name);
+              
+              // Find or create entry for this event
+              const existingEvent = itemStatsByType.events.find(
+                e => e.name === item.name
+              );
+              
+              if (existingEvent) {
+                existingEvent.stopCount++;
+              } else {
+                itemStatsByType.events.push({ name: item.name, stopCount: 1 });
+              }
+            }
+            break;
+            
+          case 'Spawned':
+            // Only count each spawned item once per stop
+            if (!spawnedInStop.has(item.name)) {
+              spawnedInStop.add(item.name);
+              
+              // Find or create entry for this spawned item
+              const existingSpawned = itemStatsByType.spawned.find(
+                s => s.name === item.name
+              );
+              
+              if (existingSpawned) {
+                existingSpawned.stopCount++;
+              } else {
+                itemStatsByType.spawned.push({ name: item.name, stopCount: 1 });
+              }
+            }
+            break;
+            
           default:
-            // Ignore other types (Task, Event, etc.)
+            // Ignore other types (Task, etc.)
             break;
         }
       });
@@ -123,6 +163,12 @@ const RouteStatistics: React.FC<RouteStatisticsProps> = ({
     
     // Sort harvestables by stop count (descending)
     itemStatsByType.harvestables.sort((a, b) => b.stopCount - a.stopCount);
+    
+    // Sort events by stop count (descending)
+    itemStatsByType.events.sort((a, b) => b.stopCount - a.stopCount);
+    
+    // Sort spawned items by stop count (descending)
+    itemStatsByType.spawned.sort((a, b) => b.stopCount - a.stopCount);
     
     return {
       totalStops,
@@ -243,6 +289,60 @@ const RouteStatistics: React.FC<RouteStatisticsProps> = ({
             </div>
           </div>
           
+          {/* Events Section */}
+          <div className="resource-section events-section">
+            <h5 className="resource-section-title">Events</h5>
+            <div className="resource-items-grid">
+              {selectedRouteStats.itemStatsByType.events.length > 0 ? (
+                selectedRouteStats.itemStatsByType.events.map((item, index) => (
+                  <div 
+                    key={item.name} 
+                    className={`resource-item ${index % 2 === 0 ? 'resource-item-even' : 'resource-item-odd'}`}
+                  >
+                    <div className="resource-item-content">
+                      <div className="resource-item-icon">
+                        <FontAwesomeIcon icon={faCalendarDay} />
+                      </div>
+                      <div className="resource-item-details">
+                        <div className="resource-item-name">{item.name}</div>
+                        <div className="resource-item-count">{item.stopCount} {item.stopCount === 1 ? 'stop' : 'stops'}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="resource-empty-message">No events in this route</div>
+              )}
+            </div>
+          </div>
+          
+          {/* Spawned Items Section */}
+          <div className="resource-section spawned-section">
+            <h5 className="resource-section-title">Spawned Items</h5>
+            <div className="resource-items-grid">
+              {selectedRouteStats.itemStatsByType.spawned.length > 0 ? (
+                selectedRouteStats.itemStatsByType.spawned.map((item, index) => (
+                  <div 
+                    key={item.name} 
+                    className={`resource-item ${index % 2 === 0 ? 'resource-item-even' : 'resource-item-odd'}`}
+                  >
+                    <div className="resource-item-content">
+                      <div className="resource-item-icon">
+                        <FontAwesomeIcon icon={faCube} />
+                      </div>
+                      <div className="resource-item-details">
+                        <div className="resource-item-name">{item.name}</div>
+                        <div className="resource-item-count">{item.stopCount} {item.stopCount === 1 ? 'stop' : 'stops'}</div>
+                      </div>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="resource-empty-message">No spawned items in this route</div>
+              )}
+            </div>
+          </div>
+
           {/* Harvestables Section */}
           <div className="resource-section harvestables-section">
             <h5 className="resource-section-title">Harvestables</h5>

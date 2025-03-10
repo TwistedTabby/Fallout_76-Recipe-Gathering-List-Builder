@@ -14,14 +14,15 @@ interface RouteHistoryProps {
 }
 
 // Item type categories we want to track specifically
-const TRACKED_ITEM_TYPES = ['Magazine', 'Bobblehead', 'Consumable', 'Event'];
+const TRACKED_ITEM_TYPES = ['Magazine', 'Bobblehead', 'Consumable', 'Event', 'Spawned'];
 
 // Icons for each item type
 const ITEM_TYPE_ICONS: Record<string, any> = {
   'Event': faCalendarDay,
   'Magazine': faBookOpen,
   'Bobblehead': faCube,
-  'Consumable': faWineBottle
+  'Consumable': faWineBottle,
+  'Spawned': faCube // Using the same icon as Bobblehead for now
 };
 
 // Colors for each item type
@@ -41,6 +42,10 @@ const ITEM_TYPE_COLORS: Record<string, { bg: string, border: string }> = {
   'Event': { 
     bg: 'rgba(var(--secondary-accent-rgb), 0.1)', 
     border: '3px solid var(--secondary-accent)' 
+  },
+  'Spawned': { 
+    bg: 'rgba(var(--main-accent-rgb), 0.1)', 
+    border: '3px solid var(--main-accent)' 
   }
 };
 
@@ -196,6 +201,7 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
     const stats: Record<string, { total: number, runs: number }> = {};
     const consumableStats: Record<string, { total: number, runs: number }> = {};
     const eventStats: Record<string, { total: number, runs: number }> = {};
+    const spawnedStats: Record<string, { total: number, runs: number }> = {};
     
     // Initialize stats for tracked item types
     TRACKED_ITEM_TYPES.forEach(type => {
@@ -205,6 +211,7 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
     // Get all consumables from the current route if available
     const routeConsumables: Record<string, string> = {}; // Maps item IDs to names
     const routeEvents: Record<string, string> = {}; // Maps item IDs to names
+    const routeSpawned: Record<string, string> = {}; // Maps item IDs to names
     
     if (currentRoute) {
       currentRoute.stops.forEach(stop => {
@@ -213,6 +220,8 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
             routeConsumables[item.id] = item.name;
           } else if (item.type.toLowerCase() === 'event') {
             routeEvents[item.id] = item.name;
+          } else if (item.type.toLowerCase() === 'spawned') {
+            routeSpawned[item.id] = item.name;
           }
         });
       });
@@ -224,6 +233,7 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
       const typeCollected: Record<string, boolean> = {};
       const consumableCollected: Record<string, boolean> = {};
       const eventCollected: Record<string, boolean> = {};
+      const spawnedCollected: Record<string, boolean> = {};
       
       // Process collected items
       Object.entries(history.collectedItems).forEach(([itemId, collected]) => {
@@ -249,6 +259,10 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
           // If we have this item in the current route's events
           itemType = 'Event';
           itemName = routeEvents[itemId];
+        } else if (routeSpawned[itemId]) {
+          // If we have this item in the current route's spawned items
+          itemType = 'Spawned';
+          itemName = routeSpawned[itemId];
         } else {
           // Default to unknown type if no details available
           itemType = 'Unknown';
@@ -278,6 +292,15 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
             eventStats[itemName].total += quantity;
             eventCollected[itemName] = true;
           }
+          
+          // For spawned items, track by name
+          if (itemType === 'Spawned' && itemName) {
+            if (!spawnedStats[itemName]) {
+              spawnedStats[itemName] = { total: 0, runs: 0 };
+            }
+            spawnedStats[itemName].total += quantity;
+            spawnedCollected[itemName] = true;
+          }
         }
       });
       
@@ -301,9 +324,16 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
           eventStats[name].runs += 1;
         }
       });
+      
+      // Count runs for each spawned item type
+      Object.entries(spawnedCollected).forEach(([name, wasCollected]) => {
+        if (wasCollected && spawnedStats[name]) {
+          spawnedStats[name].runs += 1;
+        }
+      });
     });
     
-    return { itemStats: stats, consumableStats, eventStats };
+    return { itemStats: stats, consumableStats, eventStats, spawnedStats };
   }, [histories, currentRoute]);
 
   if (histories.length === 0) {
@@ -390,7 +420,7 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
             <h4 className="text-lg font-semibold mb-3" style={{ color: 'var(--light-contrast)' }}>Collection History by Type</h4>
             <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-3">
               {/* Display non-consumable, non-event item types */}
-              {TRACKED_ITEM_TYPES.filter(type => type !== 'Consumable' && type !== 'Event').map(type => {
+              {TRACKED_ITEM_TYPES.filter(type => type !== 'Consumable' && type !== 'Event' && type !== 'Spawned').map(type => {
                 // Determine icon and colors based on type
                 const icon = ITEM_TYPE_ICONS[type] || faHistory;
                 let iconColor = 'var(--main-accent)';
@@ -500,6 +530,45 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                         <div className="flex items-center mb-2">
                           <div className="item-type-icon mr-2" style={{ color: iconColor, fontSize: '1.25rem' }}>
                             <FontAwesomeIcon icon={ITEM_TYPE_ICONS['Event']} />
+                          </div>
+                          <div className="item-type-name font-medium text-sm" style={{ color: 'var(--dark-contrast)' }}>{name}</div>
+                        </div>
+                        <div className="item-type-stats">
+                          <div className="text-4xl font-bold mb-1" style={{ color: 'var(--dark-contrast)' }}>
+                            {stats.total || 0}
+                          </div>
+                          <div className="text-xs" style={{ color: 'var(--dark-contrast)', opacity: 0.7 }}>
+                            Found in {stats.runs || 0} of {histories.length} {histories.length === 1 ? 'run' : 'runs'} ({Math.round((stats.runs / histories.length) * 100)}%)
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  
+                {/* Display all individual spawned items */}
+                {Object.entries(itemTypeStats.spawnedStats)
+                  .sort((a, b) => b[1].total - a[1].total) // Sort by total quantity (descending)
+                  .map(([name, stats]) => {
+                    const iconColor = '#9933CC'; // Purple for spawned items
+                    const borderColor = '#9933CC';
+                    
+                    return (
+                      <div 
+                        key={`spawned-${name}`} 
+                        className="item-type-card p-3 rounded-lg shadow cursor-pointer"
+                        onClick={() => setActiveItemTypeFilter(activeItemTypeFilter === 'Spawned' ? null : 'Spawned')}
+                        style={{
+                          backgroundColor: 'var(--light-contrast)',
+                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
+                          transition: 'all 0.2s ease-in-out',
+                          transform: activeItemTypeFilter === 'Spawned' ? 'translateY(-2px)' : 'none',
+                          border: activeItemTypeFilter === 'Spawned' ? `2px solid ${borderColor}` : '1px solid transparent',
+                          borderLeft: `4px solid ${borderColor}`
+                        }}
+                      >
+                        <div className="flex items-center mb-2">
+                          <div className="item-type-icon mr-2" style={{ color: iconColor, fontSize: '1.25rem' }}>
+                            <FontAwesomeIcon icon={ITEM_TYPE_ICONS['Spawned']} />
                           </div>
                           <div className="item-type-name font-medium text-sm" style={{ color: 'var(--dark-contrast)' }}>{name}</div>
                         </div>

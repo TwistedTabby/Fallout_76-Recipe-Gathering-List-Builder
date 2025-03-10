@@ -157,7 +157,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
     // If we have collectible details, update the item name
     if (collectibleDetails) {
       // For magazines with issue numbers, format the name as "Magazine Title #X"
-      const formattedName = collectibleDetails.issueNumber 
+      const formattedName = confirmationType === 'magazine' && collectibleDetails.issueNumber 
         ? `${collectibleDetails.name} #${collectibleDetails.issueNumber}` 
         : collectibleDetails.name;
       

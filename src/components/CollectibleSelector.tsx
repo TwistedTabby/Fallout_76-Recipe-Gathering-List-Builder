@@ -22,6 +22,9 @@ const CollectibleSelector: React.FC<CollectibleSelectorProps> = ({
   const [selectedIssue, setSelectedIssue] = useState<number | null>(null);
   const [availableIssues, setAvailableIssues] = useState<number[]>([]);
   
+  // State for bobblehead selection
+  const [selectedBobblehead, setSelectedBobblehead] = useState<string>('');
+  
   // State for search functionality
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredOptions, setFilteredOptions] = useState<string[]>(
@@ -64,8 +67,10 @@ const CollectibleSelector: React.FC<CollectibleSelectorProps> = ({
       if (option === 'Holotape') {
         onSelect(option);
       }
-    } else {
-      // For bobbleheads, complete the selection immediately
+    } else if (type === 'bobblehead') {
+      // For bobbleheads, set the selected bobblehead
+      setSelectedBobblehead(option);
+      // Complete the selection immediately
       onSelect(option);
     }
   };
@@ -111,12 +116,14 @@ const CollectibleSelector: React.FC<CollectibleSelectorProps> = ({
                 <button
                   key={option}
                   className={`option-button ${
-                    (type === 'magazine' && selectedMagazine === option) ? 'selected' : ''
+                    (type === 'magazine' && selectedMagazine === option) || 
+                    (type === 'bobblehead' && selectedBobblehead === option) ? 'selected' : ''
                   }`}
                   onClick={() => handleOptionSelect(option)}
                 >
                   {option}
-                  {(type === 'magazine' && selectedMagazine === option) && (
+                  {((type === 'magazine' && selectedMagazine === option) || 
+                    (type === 'bobblehead' && selectedBobblehead === option)) && (
                     <FontAwesomeIcon icon={faCheck} className="selected-icon" />
                   )}
                 </button>

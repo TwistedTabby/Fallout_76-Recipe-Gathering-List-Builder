@@ -477,6 +477,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
           route={tracking.route}
           currentStopIndex={tracking.currentStopIndex}
           collectedItems={tracking.collectedItems}
+          itemAnswers={tracking.itemAnswers}
           onSelectStop={handleSelectStop}
         />
       </div>

@@ -901,13 +901,45 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                               borderLeft: ITEM_TYPE_COLORS['Bobblehead'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
-                              <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--dark-contrast)' }}>Bobbleheads</h6>
+                              <h6 className="font-medium text-xs mb-1 flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                {(() => {
+                                  const bobbleheadCount = Object.values(history.collectibleDetails).filter(detail => detail.type === 'bobblehead').length;
+                                  return <span>{bobbleheadCount} {bobbleheadCount === 1 ? 'Bobblehead' : 'Bobbleheads'}</span>;
+                                })()}
+                              </h6>
                               <ul className="list-disc pl-4 mb-0">
-                                {Object.values(history.collectibleDetails)
-                                  .filter(detail => detail.type === 'bobblehead')
-                                  .map((detail, index) => (
-                                    <li key={index} className="text-xs" style={{ color: 'var(--dark-contrast)' }}>{detail.name}</li>
-                                  ))}
+                                {(() => {
+                                  // Group bobbleheads by name with counts
+                                  const groupedBobbleheads: Record<string, number> = {};
+                                  
+                                  // Count occurrences of each bobblehead
+                                  Object.values(history.collectibleDetails)
+                                    .filter(detail => detail.type === 'bobblehead')
+                                    .forEach(detail => {
+                                      // Use "Unspecified" as the name if the bobblehead name is missing or empty
+                                      const bobbleheadName = detail.name ? detail.name.trim() : '';
+                                      // Check if name is empty or just "Bobblehead" without a specific type
+                                      const displayName = bobbleheadName === '' || bobbleheadName.toLowerCase() === 'bobblehead' 
+                                        ? 'Unspecified Bobblehead' 
+                                        : bobbleheadName;
+                                      groupedBobbleheads[displayName] = (groupedBobbleheads[displayName] || 0) + 1;
+                                    });
+                                  
+                                  // Return list items for each unique bobblehead with count
+                                  return Object.entries(groupedBobbleheads)
+                                    .sort((a, b) => {
+                                      // Put "Unspecified Bobblehead" at the bottom
+                                      if (a[0] === 'Unspecified Bobblehead') return 1;
+                                      if (b[0] === 'Unspecified Bobblehead') return -1;
+                                      // Otherwise sort alphabetically
+                                      return a[0].localeCompare(b[0]);
+                                    })
+                                    .map(([name, count], index) => (
+                                      <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                        <span>{count} x {name}</span>
+                                      </li>
+                                    ));
+                                })()}
                               </ul>
                             </div>
                           )}
@@ -921,18 +953,48 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                               borderLeft: ITEM_TYPE_COLORS['Magazine'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
-                              <h6 className="font-medium text-xs mb-1" style={{ color: 'var(--dark-contrast)' }}>Magazines</h6>
+                              <h6 className="font-medium text-xs mb-1 flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                <span>{Object.values(history.collectibleDetails).filter(detail => detail.type === 'magazine').length} Magazines</span>
+                              </h6>
                               <ul className="list-disc pl-4 mb-0">
-                                {Object.values(history.collectibleDetails)
-                                  .filter(detail => detail.type === 'magazine')
-                                  .map((detail, index) => {
-                                    const displayName = detail.issueNumber 
-                                      ? `${detail.name} #${detail.issueNumber}` 
-                                      : detail.name;
-                                    return (
-                                      <li key={index} className="text-xs" style={{ color: 'var(--dark-contrast)' }}>{displayName}</li>
-                                    );
-                                  })}
+                                {(() => {
+                                  // Group magazines by display name with counts
+                                  const groupedMagazines: Record<string, number> = {};
+                                  
+                                  // Count occurrences of each magazine
+                                  Object.values(history.collectibleDetails)
+                                    .filter(detail => detail.type === 'magazine')
+                                    .forEach(detail => {
+                                      // Check if magazine name is missing or empty
+                                      const magazineName = detail.name ? detail.name.trim() : '';
+                                      let displayName;
+                                      
+                                      if (magazineName === '' || magazineName.toLowerCase() === 'magazine') {
+                                        displayName = 'Unspecified Magazine';
+                                      } else if (detail.issueNumber) {
+                                        displayName = `${magazineName} #${detail.issueNumber}`;
+                                      } else {
+                                        displayName = magazineName;
+                                      }
+                                      
+                                      groupedMagazines[displayName] = (groupedMagazines[displayName] || 0) + 1;
+                                    });
+                                  
+                                  // Return list items for each unique magazine with count
+                                  return Object.entries(groupedMagazines)
+                                    .sort((a, b) => {
+                                      // Put "Unspecified Magazine" at the bottom
+                                      if (a[0] === 'Unspecified Magazine') return 1;
+                                      if (b[0] === 'Unspecified Magazine') return -1;
+                                      // Otherwise sort alphabetically
+                                      return a[0].localeCompare(b[0]);
+                                    })
+                                    .map(([displayName, count], index) => (
+                                      <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                        <span>{count} x {displayName}</span>
+                                      </li>
+                                    ));
+                                })()}
                               </ul>
                             </div>
                           )}
@@ -973,7 +1035,12 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                         // Process consumables from collectibleDetails
                         consumablesFromDetails.forEach(([itemId, detail]) => {
                           const quantity = history.collectedQuantities?.[itemId] || 1;
-                          groupedConsumables[detail.name] = (groupedConsumables[detail.name] || 0) + quantity;
+                          // Check if consumable name is missing or empty
+                          const consumableName = detail.name ? detail.name.trim() : '';
+                          const displayName = consumableName === '' || consumableName.toLowerCase() === 'consumable' 
+                            ? 'Unspecified Consumable' 
+                            : consumableName;
+                          groupedConsumables[displayName] = (groupedConsumables[displayName] || 0) + quantity;
                         });
                         
                         // Process consumables without collectibleDetails
@@ -993,17 +1060,29 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                               borderLeft: ITEM_TYPE_COLORS['Consumable'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
+                              <h6 className="font-medium text-xs mb-1 flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                <span>Consumables</span>
+                                <span className="font-bold" style={{ color: 'var(--actionPositive)' }}>
+                                  {Object.values(groupedConsumables).reduce((sum, count) => sum + count, 0)} total
+                                </span>
+                              </h6>
                               <ul className="list-disc pl-4 mb-0">
-                                {Object.entries(groupedConsumables).map(([name, quantity], index) => (
-                                  <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
-                                    <span>{name}</span>
-                                    {quantity > 1 && (
+                                {Object.entries(groupedConsumables)
+                                  .sort((a, b) => {
+                                    // Put "Unspecified Consumable" at the bottom
+                                    if (a[0] === 'Unspecified Consumable') return 1;
+                                    if (b[0] === 'Unspecified Consumable') return -1;
+                                    // Otherwise sort alphabetically
+                                    return a[0].localeCompare(b[0]);
+                                  })
+                                  .map(([name, quantity], index) => (
+                                    <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                      <span>{name}</span>
                                       <span className="font-semibold ml-2" style={{ color: 'var(--actionPositive)' }}>
                                         ×{quantity}
                                       </span>
-                                    )}
-                                  </li>
-                                ))}
+                                    </li>
+                                  ))}
                               </ul>
                             </div>
                           </div>
@@ -1046,12 +1125,18 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                         // Process events from collectibleDetails
                         eventsFromDetails.forEach(([itemId, detail]) => {
                           const answer = history.itemAnswers?.[itemId];
-                          if (!groupedEvents[detail.name]) {
-                            groupedEvents[detail.name] = { count: 0, answers: [] };
+                          // Check if event name is missing or empty
+                          const eventName = detail.name ? detail.name.trim() : '';
+                          const displayName = eventName === '' || eventName.toLowerCase() === 'event' 
+                            ? 'Unspecified Event' 
+                            : eventName;
+                          
+                          if (!groupedEvents[displayName]) {
+                            groupedEvents[displayName] = { count: 0, answers: [] };
                           }
-                          groupedEvents[detail.name].count++;
+                          groupedEvents[displayName].count++;
                           if (answer) {
-                            groupedEvents[detail.name].answers.push(answer);
+                            groupedEvents[displayName].answers.push(answer);
                           }
                         });
                         
@@ -1079,20 +1164,32 @@ const RouteHistory: React.FC<RouteHistoryProps> = ({
                               borderLeft: ITEM_TYPE_COLORS['Event'].border,
                               boxShadow: '0 1px 2px rgba(0, 0, 0, 0.05)'
                             }}>
+                              <h6 className="font-medium text-xs mb-1 flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                <span>Events</span>
+                                <span className="font-bold" style={{ color: 'var(--secondary-accent)' }}>
+                                  {Object.values(groupedEvents).reduce((sum, event) => sum + event.count, 0)} total
+                                </span>
+                              </h6>
                               <ul className="list-disc pl-4 mb-0">
-                                {Object.entries(groupedEvents).map(([name, { count, answers }], index) => (
-                                  <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
-                                    <span>
-                                      {name}
-                                      {answers.length > 0 && ` (${answers.join(', ')})`}
-                                    </span>
-                                    {count > 1 && (
+                                {Object.entries(groupedEvents)
+                                  .sort((a, b) => {
+                                    // Put "Unspecified Event" at the bottom
+                                    if (a[0] === 'Unspecified Event') return 1;
+                                    if (b[0] === 'Unspecified Event') return -1;
+                                    // Otherwise sort alphabetically
+                                    return a[0].localeCompare(b[0]);
+                                  })
+                                  .map(([name, { count, answers }], index) => (
+                                    <li key={index} className="text-xs flex justify-between" style={{ color: 'var(--dark-contrast)' }}>
+                                      <span>
+                                        {name}
+                                        {answers.length > 0 && ` (${answers.join(', ')})`}
+                                      </span>
                                       <span className="font-semibold ml-2" style={{ color: 'var(--secondary-accent)' }}>
                                         ×{count}
                                       </span>
-                                    )}
-                                  </li>
-                                ))}
+                                    </li>
+                                  ))}
                               </ul>
                             </div>
                           </div>

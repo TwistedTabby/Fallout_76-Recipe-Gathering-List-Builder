@@ -149,15 +149,6 @@ const StopsList: React.FC<StopsListProps> = ({
                     })}
                   </div>
                 </div>
-                
-                <div className="tracker-stop-actions mt-1 sm:mt-0 ml-auto">
-                  {/* Status text for current stop */}
-                  {status === 'current' && (
-                    <span className="text-blue-600 text-sm font-medium">
-                      Current
-                    </span>
-                  )}
-                </div>
               </div>
               
               {/* Expanded items list */}

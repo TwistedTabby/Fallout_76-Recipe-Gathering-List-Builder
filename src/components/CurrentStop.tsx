@@ -2,7 +2,7 @@ import React from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faArrowLeft, faArrowRight, faCheck, faQuestionCircle, faThumbsUp, faThumbsDown } from '@fortawesome/free-solid-svg-icons';
 import { Stop, Item, Route } from '../types/farmingTracker';
-import { getItemType, areAllStopItemsCollected } from '../utils/itemUtils';
+import { getItemType } from '../utils/itemUtils';
 
 interface CurrentStopProps {
   stop: Stop;
@@ -36,7 +36,6 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
 }) => {
   const isFirstStop = currentStopIndex === 0;
   const isLastStop = currentStopIndex === totalStops - 1;
-  const allItemsCollected = areAllStopItemsCollected(stop, collectedItems);
 
   // Separate items into uncollected and collected
   const uncollectedItems = stop.items.filter(item => !collectedItems[item.id]);
@@ -45,21 +44,19 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
   // Get the next stop name if available
   const nextStop = !isLastStop && route?.stops?.[currentStopIndex + 1];
   const nextStopName = nextStop ? nextStop.name : '';
-
-  // Render an item button
+  
   const renderItemButton = (item: Item, isCollected: boolean) => {
-    const itemType = getItemType(item);
+    const itemType = getItemType(item)?.toLowerCase() || '';
+    const showAnswer = (itemType === 'bobblehead' || itemType === 'magazine') && isCollected;
+    const itemAnswer = showAnswer ? itemAnswers[item.id] : null;
     const collectedQuantity = collectedQuantities[item.id] || 0;
-    const itemAnswer = itemAnswers[item.id];
-    const showAnswer = isCollected && itemAnswer && (itemType === 'bobblehead' || itemType === 'magazine' || itemType === 'event' || itemType === 'spawned');
     
     return (
       <button 
         key={item.id}
-        className={`item-collection-button ${isCollected ? 'collected' : ''} ${itemType ? `item-type-${itemType}` : ''}`}
+        className={`item-collection-button ${isCollected ? 'collected' : ''}`}
         onClick={() => onItemClick(item)}
-        aria-label={`${item.name} ${isCollected ? '(collected - click to uncollect)' : '(not collected)'}`}
-        title={isCollected ? "Click to uncollect" : "Click to collect"}
+        aria-label={`${isCollected ? 'Uncollect' : 'Collect'} ${item.name}`}
       >
         <div className="item-content">
           {item.description && (
@@ -122,9 +119,9 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
           </div>
         </div>
         
-        <div className="card-body">
+        <div className="card-body p-3 sm:p-4">
           {stop.description && (
-            <div className="stop-description-container mb-4 p-3 rounded-md bg-secondary-accent border-l-4 border-main-accent">
+            <div className="stop-description-container mb-3 sm:mb-4 p-3 rounded-md bg-secondary-accent border-l-4 border-main-accent">
               <h4 className="font-semibold mb-1 flex items-center">
                 <FontAwesomeIcon icon={faQuestionCircle} className="mr-2" /> 
                 Location Notes
@@ -135,9 +132,9 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
           
           {/* Progress indicator removed as per request */}
           
-          <h4 className="font-semibold mb-2">Todo:</h4>
+          <h4 className="font-semibold mb-1 sm:mb-2 text-sm sm:text-base">Todo:</h4>
           {uncollectedItems.length === 0 ? (
-            <p className="help-text">Tasks complete!</p>
+            <p className="help-text text-sm">Tasks complete!</p>
           ) : (
             <div className="item-collection-grid">
               {uncollectedItems.map(item => renderItemButton(item, false))}
@@ -146,32 +143,31 @@ const CurrentStop: React.FC<CurrentStopProps> = ({
           
           {collectedItems2.length > 0 && (
             <>
-              <h4 className="font-semibold mb-2 mt-4">Complete:</h4>
+              <h4 className="font-semibold mb-1 sm:mb-2 mt-3 sm:mt-4 text-sm sm:text-base">Complete:</h4>
               <div className="item-collection-grid completed-items">
                 {collectedItems2.map(item => renderItemButton(item, true))}
               </div>
-              <p className="text-sm">Click any item above to immediately remove it from the completed list.</p>
+              <p className="text-xs sm:text-sm mt-1">Click any item above to immediately remove it from the completed list.</p>
             </>
           )}
         </div>
         
-        {allItemsCollected && !isLastStop && (
-          <div className="card-footer">
-            <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-2">
-              {nextStopName && (
-                <div className="text-sm sm:text-base font-medium bg-secondary-accent px-3 py-1 rounded-md w-full sm:w-auto text-center sm:text-left">
-                  <span className="font-bold">Next Stop:</span> {nextStopName}
-                </div>
-              )}
-              <button 
-                className="btn btn-primary w-full sm:w-auto"
-                onClick={onNextStop}
-              >
-                Next Stop <FontAwesomeIcon icon={faArrowRight} />
-              </button>
-            </div>
+        <div className="card-footer p-3 sm:p-4">
+          <div className="flex flex-col sm:flex-row justify-between items-center w-full gap-2">
+            {nextStopName && (
+              <div className="text-sm sm:text-base font-medium bg-secondary-accent px-3 py-1 rounded-md w-full sm:w-auto text-center sm:text-left">
+                <span className="font-bold">Next Stop:</span> {nextStopName}
+              </div>
+            )}
+            <button 
+              className="btn btn-primary w-full sm:w-auto"
+              onClick={onNextStop}
+              disabled={isLastStop}
+            >
+              Next Stop <FontAwesomeIcon icon={faArrowRight} />
+            </button>
           </div>
-        )}
+        </div>
       </div>
     </div>
   );

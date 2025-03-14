@@ -17,22 +17,22 @@ const TrackingStats: React.FC<TrackingStatsProps> = ({
   totalStops
 }) => {
   return (
-    <div className="tracking-info mb-4">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div className="tracking-stat p-3 rounded-lg">
-          <div className="flex items-center mb-1">
-            <FontAwesomeIcon icon={faStopwatch} className="mr-2" />
-            <span className="font-semibold">Elapsed Time</span>
+    <div className="tracking-info mb-3">
+      <div className="grid grid-cols-2 gap-2">
+        <div className="tracking-stat p-2 sm:p-3 rounded-lg">
+          <div className="flex items-center mb-0.5 sm:mb-1">
+            <FontAwesomeIcon icon={faStopwatch} className="mr-1 sm:mr-2 text-sm sm:text-base" />
+            <span className="font-semibold text-sm sm:text-base">Elapsed Time</span>
           </div>
-          <div className="text-xl font-mono">{elapsedTime}</div>
+          <div className="text-lg sm:text-xl font-mono">{elapsedTime}</div>
         </div>
         
-        <div className="tracking-stat p-3 rounded-lg">
-          <div className="flex items-center mb-1">
-            <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-2" />
-            <span className="font-semibold">Location</span>
+        <div className="tracking-stat p-2 sm:p-3 rounded-lg">
+          <div className="flex items-center mb-0.5 sm:mb-1">
+            <FontAwesomeIcon icon={faMapMarkerAlt} className="mr-1 sm:mr-2 text-sm sm:text-base" />
+            <span className="font-semibold text-sm sm:text-base">Location</span>
           </div>
-          <div className="text-xl">
+          <div className="text-lg sm:text-xl">
             Stop {currentStopIndex + 1} of {totalStops}
           </div>
         </div>

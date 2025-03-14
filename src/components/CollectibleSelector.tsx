@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faSearch, faCheck, faTag, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faTag, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
 import { MAGAZINE_TITLES, generateMagazineIssues, BOBBLEHEADS } from '../constants/collectibles';
 
 interface CollectibleSelectorProps {
@@ -28,7 +28,7 @@ const CollectibleSelector: React.FC<CollectibleSelectorProps> = ({
   const [selectedBobblehead, setSelectedBobblehead] = useState<string>('');
   
   // State for search functionality
-  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [searchTerm] = useState<string>('');
   const [filteredOptions, setFilteredOptions] = useState<string[]>(
     type === 'magazine' ? MAGAZINE_TITLES : BOBBLEHEADS
   );
@@ -88,11 +88,6 @@ const CollectibleSelector: React.FC<CollectibleSelectorProps> = ({
   const handleIssueSelect = (issue: number) => {
     setSelectedIssue(issue);
     onSelect(selectedMagazine, issue);
-  };
-
-  // Handle search input change
-  const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
   };
 
   return (

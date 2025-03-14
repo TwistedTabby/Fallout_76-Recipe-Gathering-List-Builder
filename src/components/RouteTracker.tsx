@@ -345,17 +345,17 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
       {/* Sticky header for mobile */}
       {showStickyHeader && (
         <div 
-          className="sticky-header fixed top-0 left-0 right-0 bg-secondary-accent text-dark-contrast p-3 z-50 sm:hidden"
+          className="sticky-header fixed top-0 left-0 right-0 bg-secondary-accent text-dark-contrast p-2 z-50 sm:hidden"
           onClick={scrollToTop}
         >
           <div className="container mx-auto">
             {/* Route title row */}
-            <div className="font-semibold text-base mb-2 break-words">
+            <div className="font-semibold text-sm mb-1 break-words">
               Tracking: {tracking.route.name}
             </div>
             
             {/* Info row */}
-            <div className="flex justify-between items-center text-xs mb-2">
+            <div className="flex justify-between items-center text-xs mb-1">
               <div className="flex items-center">
                 <span>Stop {tracking.currentStopIndex + 1}/{tracking.route.stops.length}</span>
               </div>
@@ -374,9 +374,9 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
             {/* Navigation and action buttons row */}
             <div className="flex justify-between items-center">
               {/* Navigation buttons */}
-              <div className="flex space-x-3">
+              <div className="flex space-x-2">
                 <button 
-                  className="btn-nav-sticky bg-main-accent text-white rounded-full w-9 h-9 flex items-center justify-center"
+                  className="btn-nav-sticky bg-main-accent text-white rounded-full w-8 h-8 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     moveToPreviousStop();
@@ -387,7 +387,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
                   <FontAwesomeIcon icon={faArrowLeft} size="sm" />
                 </button>
                 <button 
-                  className="btn-nav-sticky bg-main-accent text-white rounded-full w-9 h-9 flex items-center justify-center"
+                  className="btn-nav-sticky bg-main-accent text-white rounded-full w-8 h-8 flex items-center justify-center"
                   onClick={(e) => {
                     e.stopPropagation();
                     moveToNextStop();
@@ -400,9 +400,9 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
               </div>
               
               {/* Action buttons */}
-              <div className="flex space-x-3 text-xs">
+              <div className="flex space-x-2 text-xs">
                 <button 
-                  className="btn btn-outline btn-xs py-1 px-3"
+                  className="btn btn-outline btn-xs py-1 px-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     onCancel();
@@ -411,7 +411,7 @@ const RouteTracker: React.FC<RouteTrackerProps> = ({
                   <FontAwesomeIcon icon={faTimes} className="mr-1" /> Cancel
                 </button>
                 <button 
-                  className="btn btn-success btn-xs py-1 px-3"
+                  className="btn btn-success btn-xs py-1 px-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     onComplete();

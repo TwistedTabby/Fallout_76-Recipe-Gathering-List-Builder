@@ -63,6 +63,7 @@ const ItemConfirmationDialog: React.FC<ItemConfirmationDialogProps> = ({
         type={confirmationType as 'bobblehead' | 'magazine'}
         onSelect={handleCollectibleSelect}
         onCancel={handleCollectibleCancel}
+        itemName={item.name}
       />
     );
   }

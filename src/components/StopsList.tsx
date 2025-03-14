@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faCheckCircle, faChevronDown, faChevronRight, faTimesCircle, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
+import { faCheckCircle, faChevronDown, faChevronRight, faTimesCircle, faQuestionCircle, faArrowRight } from '@fortawesome/free-solid-svg-icons';
 import { Route, Item } from '../types/farmingTracker';
 import { getStopCompletionStatus, getItemType } from '../utils/itemUtils';
 
@@ -93,13 +93,34 @@ const StopsList: React.FC<StopsListProps> = ({
                 onClick={() => onSelectStop(index)}
               >
                 <div className="flex items-center flex-1">
-                  <button 
-                    className="mr-2 text-gray-500 hover:text-gray-700 focus:outline-none"
-                    onClick={(e) => toggleStopExpanded(stop.id, e)}
-                    aria-label={isExpanded ? "Collapse stop" : "Expand stop"}
-                  >
-                    <FontAwesomeIcon icon={isExpanded ? faChevronDown : faChevronRight} />
-                  </button>
+                  {/* Status icon at the start */}
+                  <span className="mr-2 w-6 text-center flex items-center justify-center">
+                    {status === 'completed' ? (
+                      <button 
+                        className="text-green-600 hover:text-green-700 focus:outline-none"
+                        onClick={(e) => toggleStopExpanded(stop.id, e)}
+                        aria-label={isExpanded ? "Collapse stop" : "Expand stop"}
+                      >
+                        <FontAwesomeIcon icon={isExpanded ? faChevronDown : faCheckCircle} />
+                      </button>
+                    ) : status === 'current' ? (
+                      <button 
+                        className="text-blue-600 hover:text-blue-700 focus:outline-none"
+                        onClick={(e) => toggleStopExpanded(stop.id, e)}
+                        aria-label={isExpanded ? "Collapse stop" : "Expand stop"}
+                      >
+                        <FontAwesomeIcon icon={isExpanded ? faChevronDown : faArrowRight} />
+                      </button>
+                    ) : (
+                      <button 
+                        className="text-gray-600 hover:text-gray-800 focus:outline-none"
+                        onClick={(e) => toggleStopExpanded(stop.id, e)}
+                        aria-label={isExpanded ? "Collapse stop" : "Expand stop"}
+                      >
+                        <FontAwesomeIcon icon={isExpanded ? faChevronDown : faChevronRight} />
+                      </button>
+                    )}
+                  </span>
                   <div className="tracker-stop-name font-medium">
                     {index + 1}. {stop.name}
                   </div>
@@ -130,13 +151,9 @@ const StopsList: React.FC<StopsListProps> = ({
                 </div>
                 
                 <div className="tracker-stop-actions mt-1 sm:mt-0 ml-auto">
-                  {status === 'completed' && (
-                    <span className="text-green-500">
-                      <FontAwesomeIcon icon={faCheckCircle} />
-                    </span>
-                  )}
+                  {/* Status text for current stop */}
                   {status === 'current' && (
-                    <span className="text-blue-500">
+                    <span className="text-blue-600 text-sm font-medium">
                       Current
                     </span>
                   )}

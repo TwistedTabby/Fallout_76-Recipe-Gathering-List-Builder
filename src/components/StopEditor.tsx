@@ -531,7 +531,7 @@ const StopEditor: React.FC<StopEditorProps> = ({ stop, onSave, onCancel }) => {
                       {!ITEM_TYPES_WITHOUT_QUANTITY.includes(item.type) && item.quantity > 1 && 
                         <span className="item-quantity ml-2">× {item.quantity}</span>
                       }
-                      {item.description && <span className="item-description ml-2 opacity-75">{item.description}</span>}
+                      {item.description && <span className="item-description ml-2">{item.description}</span>}
                     </div>
                   </div>
                   <div className="stop-actions flex gap-1 sm:gap-2">

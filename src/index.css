@@ -2160,7 +2160,7 @@ select.form-control.bg-secondary-accent {
 }
 
 #root .item-description {
-  color: var(--secondary-accent) !important;
+  color: var(--light-contrast) !important;
   font-style: normal !important;
   background-color: rgba(0,0,0,0) !important;
   font-weight: 500 !important;
